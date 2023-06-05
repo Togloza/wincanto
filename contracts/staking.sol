@@ -28,9 +28,9 @@ contract staking is Ownable, ReentrancyGuard, INFTContract {
                         Global Variables
     //////////////////////////////////////////////////////////////*/
     // Unstake time required by the CANTO network.
-    uint constant UNSTAKE_TIME = 21 days;
-
-    // Owner's address.
+    //uint constant UNSTAKE_TIME = 21 days;
+    uint constant UNSTAKE_TIME = 21 minutes;
+    // Owner's address. 
     address private _owner;
 
     // Initialize ERC721 token address.
@@ -99,27 +99,28 @@ contract staking is Ownable, ReentrancyGuard, INFTContract {
     // Function checks if the sender is permitted to send the token, and that it isn't already being unstaked.
     // Otherwise, store the unstake time, and set stakingStatus to false.
     // This removes elegibility for calculateWinningNFTID
-    function startUnstake(uint nftID) public {
+    function startUnstake(uint tokenID) public {
         require(
-            nftTokenAddress.proxyIsApprovedOrOwner(msg.sender, nftID),
+            nftTokenAddress.proxyIsApprovedOrOwner(msg.sender, tokenID),
             "Not owner of token"
         );
-        if (unstakeTimestamp[nftID] != 0) {
+        if (unstakeTimestamp[tokenID] != 0) {
             revert(
                 string(
                     abi.encodePacked(
                         "Unstaking already in process, seconds since unstake: ",
-                        uint256ToString(checkTimestamp(unstakeTimestamp[nftID]))
+                        uint256ToString(checkTimestamp(unstakeTimestamp[tokenID]))
                     )
                 )
             );
         }
 
-        unstakeTimestamp[nftID] = block.timestamp;
-        users[nftID].stakingStatus = false;
+        unstakeTimestamp[tokenID] = block.timestamp;
+        users[tokenID].stakingStatus = false;
+        updateMetadata(tokenID); 
         emit startedUnstaking(
-            nftID,
-            users[nftID].stakingAmount,
+            tokenID,
+            users[tokenID].stakingAmount,
             block.timestamp
         );
     }
@@ -157,10 +158,12 @@ contract staking is Ownable, ReentrancyGuard, INFTContract {
         return (nonZeroStoreValues, nonZeroStoreAmounts);
     }
 
-    function ownerUnstake(uint nftID) public payable {
-        require(isValidUnstake(nftID));
-        require(msg.value == users[nftID].stakingAmount);
-        address tokenHolder = nftTokenAddress.proxyOwnerOf(nftID);
+    function ownerUnstake(uint tokenID) public payable {
+        require(isValidUnstake(tokenID), "Not valid token to unstake");
+        require(msg.value == users[tokenID].stakingAmount, "msg.value not equal to stakingAmount");
+        require(nftTokenAddress.proxyIsApprovedOrOwner(address(this), tokenID), "Not approved");
+        address tokenHolder = nftTokenAddress.proxyOwnerOf(tokenID);
+        nftTokenAddress.burn(tokenID);
         payable(tokenHolder).transfer(msg.value);
     }
 
@@ -171,9 +174,7 @@ contract staking is Ownable, ReentrancyGuard, INFTContract {
     //////////////////////////////////////////////////////////////*/
 
     // Generate a random number using current blockchain data and a random input.
-    function generateRandomNumber(
-        uint256 input
-    ) internal view returns (uint256) {
+    function generateRandomNumber(uint256 input) internal view returns (uint256) {
         uint256 randomNumber = uint256(
             keccak256(abi.encodePacked(block.timestamp, block.number, input))
         );
@@ -202,8 +203,7 @@ contract staking is Ownable, ReentrancyGuard, INFTContract {
         }
 
         // Generate a random number within the range of the cumulative staking amounts
-        uint randomNum = generateRandomNumber(totalStakingAmount) %
-            totalStakingAmount;
+        uint randomNum = generateRandomNumber(totalStakingAmount) % totalStakingAmount;
 
         // Find the winner by iterating over the users and checking the cumulative staking amounts
         uint cumulativeAmount = 0;
@@ -226,13 +226,30 @@ contract staking is Ownable, ReentrancyGuard, INFTContract {
     //////////////////////////////////////////////////////////////*/
     function setTokenURI(uint256 tokenID) public {
         string memory baseURI = "https://example.com/api/token/";
+
+        updateMetadata(tokenID);
+
+        // Set the token's metadata URI
+        string memory tokenURI = string(
+            abi.encodePacked(baseURI, uint256ToString(tokenID))
+        );
+        tokenURIs[tokenID] = tokenURI;
+
+        // Store the metadata
+        //_setTokenURI(tokenID, metadata);
+    }
+
+    function getMetadata(uint tokenID) public view returns (string memory) {
+        string memory tokenMetadata = metadata[tokenID];
+        return tokenMetadata;
+    }
+
+    function updateMetadata(uint tokenID) public {
         User memory user = getUserByNFTID(tokenID);
         // Convert the struct values to string
         string memory stakingAmountStr = uint256ToString(user.stakingAmount);
         string memory stakingStatusStr = boolToString(user.stakingStatus);
-        string memory initialTimestampStr = uint256ToString(
-            user.initialTimestamp
-        );
+        string memory initialTimestampStr = uint256ToString(user.initialTimestamp);
 
         // Construct the metadata JSON object
         metadata[tokenID] = string(
@@ -251,19 +268,6 @@ contract staking is Ownable, ReentrancyGuard, INFTContract {
             )
         );
 
-        // Set the token's metadata URI
-        string memory tokenURI = string(
-            abi.encodePacked(baseURI, uint256ToString(tokenID))
-        );
-        tokenURIs[tokenID] = tokenURI;
-
-        // Store the metadata
-        //_setTokenURI(tokenID, metadata);
-    }
-
-    function getMetadata(uint tokenID) public view returns (string memory) {
-        string memory tokenMetadata = metadata[tokenID];
-        return tokenMetadata;
     }
 
     /*///////////////////////////////////////////////////////////////
@@ -345,14 +349,37 @@ contract staking is Ownable, ReentrancyGuard, INFTContract {
         return _value ? "true" : "false";
     }
 
+    function hexToDecimal(string memory hexString) public pure returns (uint256) {
+        uint256 decimalValue = 0;
+        uint256 digitValue;
+        
+        for (uint256 i = 0; i < bytes(hexString).length; i++) {
+            uint8 charCode = uint8(bytes(hexString)[i]);
+            
+            if (charCode >= 48 && charCode <= 57) {
+                digitValue = charCode - 48;
+            } else if (charCode >= 65 && charCode <= 70) {
+                digitValue = charCode - 55;
+            } else if (charCode >= 97 && charCode <= 102) {
+                digitValue = charCode - 87;
+            } else {
+                revert("Invalid hex string");
+            }
+            
+            decimalValue = decimalValue * 16 + digitValue;
+        }
+        
+        return decimalValue;
+    }
+
     /*///////////////////////////////////////////////////////////////
                          Helper Functions
         -----------------------------------------------------
                          Getter Functions
     //////////////////////////////////////////////////////////////*/
 
-    function getUserByNFTID(uint _nftID) public view returns (User memory) {
-        User memory user = users[_nftID];
+    function getUserByNFTID(uint _tokenID) public view returns (User memory) {
+        User memory user = users[_tokenID];
         return user;
     }
 
@@ -370,6 +397,10 @@ contract staking is Ownable, ReentrancyGuard, INFTContract {
             }
         }
         return (totalStakingAmount, totalUnstaking);
+    } 
+
+    function getContractBalance() external view returns (uint){
+        return address(this).balance;
     }
 
     /*///////////////////////////////////////////////////////////////
@@ -401,7 +432,7 @@ contract staking is Ownable, ReentrancyGuard, INFTContract {
 
     event receivedFunds(address sender, uint _amount);
     event winnerChosen(address winner, uint stakedAmount);
-    event startedUnstaking(uint nftID, uint unstakingAmount, uint timestamp);
+    event startedUnstaking(uint tokenID, uint unstakingAmount, uint timestamp);
 
     /*///////////////////////////////////////////////////////////////
                             Interface Functions
