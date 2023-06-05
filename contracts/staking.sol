@@ -157,7 +157,7 @@ function findWinningNFTAddress() public view returns(address) {
     uint winningID = calculateWinningNFTID();
     address winner = addresses[winningID];
 
-    emit winnerChosen(winner, users[winningID].stakingAmount);
+    // emit winnerChosen(winner, users[winningID].stakingAmount);
     return winner;
 }
 
@@ -229,7 +229,7 @@ function setTokenURI(uint256 tokenId) public {
         -----------------------------------------------------
                         Timestamp Functions
     //////////////////////////////////////////////////////////////*/
-function checkTimestamp(uint initialTimestamp) internal returns (uint) {
+function checkTimestamp(uint initialTimestamp) internal view returns (uint) {
     return block.timestamp - initialTimestamp; 
 }
 
@@ -291,7 +291,7 @@ function boolToString(bool _value) internal pure returns (string memory) {
     //////////////////////////////////////////////////////////////*/
 
 
-function getUserByNFTID(uint _nftID) external view returns (User memory) {
+function getUserByNFTID(uint _nftID) public view returns (User memory) {
     User memory user = users[_nftID];
     return user;
 }
@@ -338,6 +338,8 @@ function totalStakedAmounts() external view returns(uint, uint){
 
     /*///////////////////////////////////////////////////////////////
                             Interface Functions
+            -----------------------------------------------------
+                        INFTContract Required Functions
     //////////////////////////////////////////////////////////////*/
 
 
@@ -346,7 +348,27 @@ function totalStakedAmounts() external view returns(uint, uint){
         return nftTokenAddress.getNextTokenId();
     }
 
-    // Ownable required function
+    function mintTo(address _to, string memory _tokenURI) external override {
+        nftTokenAddress.mintTo(_to, _tokenURI);
+    }
+    function burn(uint256 _tokenId) external override {
+        nftTokenAddress.burn(_tokenId);
+    }
+
+    function proxyIsApprovedOrOwner(address _operator, uint256 _tokenId) 
+    external 
+    view 
+    override
+    returns (bool isApprovedOrOwnerOf){
+        return nftTokenAddress.proxyIsApprovedOrOwner(_operator, _tokenId);
+    }
+ 
+ 
+    /*///////////////////////////////////////////////////////////////
+                            Interface Functions
+            -----------------------------------------------------
+                        Ownable Required Functions
+    //////////////////////////////////////////////////////////////*/
     /// @dev Returns whether owner can be set in the given execution context.
     function _canSetOwner() internal view virtual override returns (bool) {
         return msg.sender == owner();
