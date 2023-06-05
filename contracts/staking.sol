@@ -7,29 +7,33 @@ import "@thirdweb-dev/contracts/openzeppelin-presets/security/ReentrancyGuard.so
 import "@thirdweb-dev/contracts/extension/Ownable.sol";
 
 
+
 // Interface for ERC721 contract to get tokenId values. 
 interface INFTContract {
     function getNextTokenId() external view returns (uint);
+    function mintTo(address _to, string memory _tokenURI) external;
 }
 
 
 contract staking is Ownable, ReentrancyGuard, INFTContract {
 
-
+// Owner's address.
 address private _owner;
-INFTContract nftTokenAddress; 
 
+// Initialize ERC721 token address.
+INFTContract nftTokenAddress; 
 
 // Struct to hold user information. 
 struct User {
-    address userAddress;
     uint stakingAmount;
     bool stakingStatus;
     uint timestamp;
 }
 
+// Mapping the nft id to the user structure variable.
 mapping(uint => User) public users;
-mapping(uint => string) public tokenURIs; 
+mapping(uint => string) public tokenURIs;
+mapping(uint => address) public addresses;  
 
 constructor(INFTContract _nftTokenAddress) {
     require(address(_nftTokenAddress) != address(0), "address 0");
@@ -39,56 +43,48 @@ constructor(INFTContract _nftTokenAddress) {
     _setupOwner(msg.sender);
 }
 
-function generateRandomNumber(uint256 input) external view onlyOwner returns (uint256) {
-    uint256 randomNumber = uint256(keccak256(abi.encodePacked(block.timestamp, block.prevrandao, block.number, input)));
-    return randomNumber;
+function findWinningNFTAddress() public view returns(address) {
+    uint winningID = calculateWinningNFTID();
+    address winner = addresses[winningID];
+
+    emit winnerChosen(winner, users[winningID].stakingAmount);
+    return winner;
 }
-
-function setTokenURI(uint256 tokenId, string memory variableData) internal {
-    string memory baseURI = "https://example.com/api/token/";
-
-    // Construct the complete metadata URI with the variable data
-    string memory tokenURI = string(abi.encodePacked(baseURI, uint256ToString(tokenId), "?variable=", variableData));
-
-    tokenURIs[tokenId] = tokenURI;
-}
-
-
 
 function getUserByNFTID(uint _nftID) public view returns (User memory) {
     User memory user = users[_nftID];
-    require(user.userAddress != address(0), "User not found");
-    
     return user;
 }
-
+ 
 function stake(uint _stakingAmount) public {
     // Create a new User struct instance
     User memory newUser = User({
-        userAddress: msg.sender,
         stakingAmount: _stakingAmount,
         stakingStatus: true,
         timestamp: block.timestamp
     });
-    
+
     // Add the new user to the mapping using the NFT ID as the key
     users[nftTokenAddress.getNextTokenId()] = newUser;
+    // Add the address to the addresses mapping with the NFT ID as the key
+    addresses[nftTokenAddress.getNextTokenId()] = msg.sender;
+
+    // Get the next token id from the ERC721 contract
+    uint256 tokenId = nftTokenAddress.getNextTokenId();
+    // Dynamically generate the URI data 
+    setTokenURI(tokenId);
+    // Mint the token to the sender using the generated URI.
+    nftTokenAddress.mintTo(msg.sender, tokenURIs[tokenId]);
     
-    // Mint the ERC721 token with the _nftID
-    // ...
+
 }
 
 
 
-
-
-
-
-function setTokenURI(uint256 tokenId) internal {
+/* function setTokenURI(uint256 tokenId) public {
     string memory baseURI = "https://example.com/api/token/";
     User memory user = getUserByNFTID(tokenId);
     // Convert the struct values to string
-    string memory userAddressStr = addressToString(user.userAddress);
     string memory stakingAmountStr = uint256ToString(user.stakingAmount);
     string memory stakingStatusStr = boolToString(user.stakingStatus);
     string memory timestampStr = uint256ToString(user.timestamp);
@@ -98,8 +94,6 @@ function setTokenURI(uint256 tokenId) internal {
         abi.encodePacked(
             baseURI,
             uint256ToString(tokenId),
-            "?userAddress=",
-            userAddressStr,
             "&stakingAmount=",
             stakingAmountStr,
             "&stakingStatus=",
@@ -110,7 +104,98 @@ function setTokenURI(uint256 tokenId) internal {
     );
 
     tokenURIs[tokenId] = tokenURI;
+} */
+
+function setTokenURI(uint256 tokenId) public {
+    string memory baseURI = "https://example.com/api/token/";
+    User memory user = getUserByNFTID(tokenId);
+    // Convert the struct values to string
+    string memory stakingAmountStr = uint256ToString(user.stakingAmount);
+    string memory stakingStatusStr = boolToString(user.stakingStatus);
+    string memory timestampStr = uint256ToString(user.timestamp);
+
+    // Construct the metadata JSON object
+    string memory metadata = string(
+        abi.encodePacked(
+            "{",
+            '"stakingAmount": "', stakingAmountStr, '",',
+            '"stakingStatus": "', stakingStatusStr, '",',
+            '"timestamp": "', timestampStr, '"',
+            "}"
+        )
+    );
+
+    // Set the token's metadata URI
+    string memory tokenURI = string(abi.encodePacked(baseURI, uint256ToString(tokenId)));
+    tokenURIs[tokenId] = tokenURI;
+
+    // Store the metadata
+    //_setTokenURI(tokenId, metadata);
 }
+
+
+
+
+function totalStakedAmounts() external view returns(uint, uint){
+
+    uint totalStakingAmount = 0;
+    uint totalUnstaking = 0;
+
+    // Calculate the cumulative staking amounts of users with stakingStatus set to true
+    for (uint i = 0; i < nftTokenAddress.getNextTokenId(); i++) {
+        if (users[i].stakingStatus) {
+            totalStakingAmount += users[i].stakingAmount;
+        }
+        else {
+            totalUnstaking += users[i].stakingAmount;
+        }
+
+    }
+    return (totalStakingAmount, totalUnstaking);
+}  
+
+
+    /*///////////////////////////////////////////////////////////////
+                        Internal Helper Functions
+    //////////////////////////////////////////////////////////////*/
+
+function generateRandomNumber(uint256 input) internal view returns (uint256) {
+    uint256 randomNumber = uint256(keccak256(abi.encodePacked(block.timestamp, block.number, input)));
+    return randomNumber;
+} 
+
+
+function calculateWinningNFTID() internal view returns (uint) {
+    uint totalStakingAmount = 0;
+
+    // Calculate the cumulative staking amounts of users with stakingStatus set to true
+    for (uint i = 0; i < nftTokenAddress.getNextTokenId(); i++) {
+        if (users[i].stakingStatus) {
+            totalStakingAmount += users[i].stakingAmount;
+        }
+    }
+
+    // Generate a random number within the range of the cumulative staking amounts
+    uint randomNum = generateRandomNumber(totalStakingAmount) % totalStakingAmount;
+
+    // Find the winner by iterating over the users and checking the cumulative staking amounts
+    uint cumulativeAmount = 0;
+    for (uint i = 0; i < nftTokenAddress.getNextTokenId(); i++) {
+        if (users[i].stakingStatus) {
+            cumulativeAmount += users[i].stakingAmount;
+            if (randomNum <= cumulativeAmount) {
+                return i; // Return the NFT ID of the winner
+            }
+        }
+    }
+
+    revert("No winner found"); // This should never happen if there is at least one eligible user
+}
+
+
+
+
+
 
 // Helper function to convert addresses to strings
 function addressToString(address _address) internal pure returns (string memory) {
@@ -157,11 +242,13 @@ function boolToString(bool _value) internal pure returns (string memory) {
 }
 
 
+
     /*///////////////////////////////////////////////////////////////
                                 Events
     //////////////////////////////////////////////////////////////*/
 
     event receivedFunds(address sender, uint _amount);
+    event winnerChosen(address winner, uint stakedAmount);
 
 
     /*///////////////////////////////////////////////////////////////

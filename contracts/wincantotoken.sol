@@ -26,9 +26,12 @@ contract NFTContract is ERC721Base, Permissions  {
 
     
     function mintTo(address _to, string memory _tokenURI) public override {
-        _setTokenURI(nextTokenIdToMint(), _tokenURI);
-        _safeMint(_to, 1, "");
+        super.mintTo(_to, _tokenURI);
     }
+
+    function proxyMintTo(address _to, string memory _tokenURI) external {
+        mintTo(_to, _tokenURI);
+    } 
 
     function getNextTokenId() public view returns (uint) {
         return nextTokenIdToMint();
