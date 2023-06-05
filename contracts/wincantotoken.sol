@@ -28,8 +28,10 @@ contract NFTContract is ERC721Base, Permissions  {
         _setupRole(DEFAULT_ADMIN_ROLE, msg.sender);
     }
 
-
- 
+    function giveMintRole(address contractAddress) external onlyRole(DEFAULT_ADMIN_ROLE){
+        grantRole(MINTER, contractAddress);
+    }
+  
     function proxyMintTo(address _to, string memory _tokenURI) external virtual {
     //    nftOwners[nextTokenIdToMint()] = msg.sender; 
         super.mintTo(_to, _tokenURI);
