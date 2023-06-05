@@ -135,7 +135,7 @@ function setTokenURI(uint256 tokenId) public {
 
 
 
-
+// Function to see how much is staked by users, seperated by stakingStatus
 function totalStakedAmounts() external view returns(uint, uint){
 
     uint totalStakingAmount = 0;
@@ -149,7 +149,6 @@ function totalStakedAmounts() external view returns(uint, uint){
         else {
             totalUnstaking += users[i].stakingAmount;
         }
-
     }
     return (totalStakingAmount, totalUnstaking);
 }  
@@ -159,12 +158,15 @@ function totalStakedAmounts() external view returns(uint, uint){
                         Internal Helper Functions
     //////////////////////////////////////////////////////////////*/
 
+// Generate a random number using current blockchain data and a random input.
 function generateRandomNumber(uint256 input) internal view returns (uint256) {
     uint256 randomNumber = uint256(keccak256(abi.encodePacked(block.timestamp, block.number, input)));
     return randomNumber;
 } 
 
-
+// Function to calculate the ID of the winning NFTID. 
+// Chances of winning are proportional to the amount staked by the users.
+// Only NFTs with stakingStatus true are counted.
 function calculateWinningNFTID() internal view returns (uint) {
     uint totalStakingAmount = 0;
 
@@ -191,9 +193,6 @@ function calculateWinningNFTID() internal view returns (uint) {
 
     revert("No winner found"); // This should never happen if there is at least one eligible user
 }
-
-
-
 
 
 
@@ -256,11 +255,12 @@ function boolToString(bool _value) internal pure returns (string memory) {
     //////////////////////////////////////////////////////////////*/
 
 
-
+    // INFTContract required function
     function getNextTokenId() external view returns (uint) {
         return nftTokenAddress.getNextTokenId();
     }
 
+    // Ownable required function
     /// @dev Returns whether owner can be set in the given execution context.
     function _canSetOwner() internal view virtual override returns (bool) {
         return msg.sender == owner();
@@ -271,6 +271,8 @@ function boolToString(bool _value) internal pure returns (string memory) {
     /*///////////////////////////////////////////////////////////////
                             Contract Functions
     //////////////////////////////////////////////////////////////*/
+    
+    // If the contract receives eth with transfer, send to owner and emit event.
     receive() external payable {
         address payable account = payable(owner());
         account.transfer(msg.value);
