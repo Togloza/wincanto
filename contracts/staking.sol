@@ -12,10 +12,22 @@ import "@thirdweb-dev/contracts/extension/Ownable.sol";
 interface INFTContract {
     function getNextTokenId() external view returns (uint);
     function mintTo(address _to, string memory _tokenURI) external;
-}
+    function burn(uint256 _tokenId) external;
+
+    function proxyIsApprovedOrOwner(address _operator, uint256 _tokenId) 
+    external 
+    view  
+    returns (bool isApprovedOrOwnerOf);
+} 
 
 
 contract staking is Ownable, ReentrancyGuard, INFTContract {
+
+/*///////////////////////////////////////////////////////////////
+                        Global Variables
+    //////////////////////////////////////////////////////////////*/
+// Unstake time required by the CANTO network.
+uint constant UNSTAKE_TIME = 21 days;
 
 // Owner's address.
 address private _owner;
@@ -23,18 +35,28 @@ address private _owner;
 // Initialize ERC721 token address.
 INFTContract nftTokenAddress; 
 
+/*///////////////////////////////////////////////////////////////
+                        Structures
+    //////////////////////////////////////////////////////////////*/
 // Struct to hold user information. 
 struct User {
     uint stakingAmount;
     bool stakingStatus;
-    uint timestamp;
+    uint initialTimestamp;
 }
 
+/*///////////////////////////////////////////////////////////////
+                        Mappings
+    //////////////////////////////////////////////////////////////*/
 // Mapping the nft id to the user structure variable.
 mapping(uint => User) public users;
+mapping(uint => uint) public unstakeTimestamp;
 mapping(uint => string) public tokenURIs;
 mapping(uint => address) public addresses;  
 
+/*///////////////////////////////////////////////////////////////
+                        Constructor
+    //////////////////////////////////////////////////////////////*/
 constructor(INFTContract _nftTokenAddress) {
     require(address(_nftTokenAddress) != address(0), "address 0");
 
@@ -43,25 +65,21 @@ constructor(INFTContract _nftTokenAddress) {
     _setupOwner(msg.sender);
 }
 
-function findWinningNFTAddress() public view returns(address) {
-    uint winningID = calculateWinningNFTID();
-    address winner = addresses[winningID];
 
-    emit winnerChosen(winner, users[winningID].stakingAmount);
-    return winner;
-}
+/*///////////////////////////////////////////////////////////////
+                        Main Functions
+        -----------------------------------------------------
+                        Staking Logic
+    //////////////////////////////////////////////////////////////*/
 
-function getUserByNFTID(uint _nftID) public view returns (User memory) {
-    User memory user = users[_nftID];
-    return user;
-}
- 
-function stake(uint _stakingAmount) public {
+function stake() public payable {
+    uint _stakingAmount = _msgValue(); 
+
     // Create a new User struct instance
     User memory newUser = User({
         stakingAmount: _stakingAmount,
         stakingStatus: true,
-        timestamp: block.timestamp
+        initialTimestamp: block.timestamp
     });
 
     // Add the new user to the mapping using the NFT ID as the key
@@ -79,83 +97,54 @@ function stake(uint _stakingAmount) public {
 
 }
 
+// Function checks if the sender is permitted to send the token, and that it isn't already being unstaked.
+// Otherwise, store the unstake time, and set stakingStatus to false. 
+// This removes elegibility for calculateWinningNFTID
+function startUnstake(uint nftID) public {
+    require(nftTokenAddress.proxyIsApprovedOrOwner(msg.sender, nftID), "Not owner of token");
+    if (unstakeTimestamp[nftID] != 0){
+        revert(string(abi.encodePacked("Unstaking already in process, seconds since unstake: ", uint256ToString(checkTimestamp(unstakeTimestamp[nftID])))));
+    }
 
+    unstakeTimestamp[nftID] = block.timestamp;
+    users[nftID].stakingStatus = false;
+    emit startedUnstaking(nftID, users[nftID].stakingAmount, block.timestamp);
+} 
 
-/* function setTokenURI(uint256 tokenId) public {
-    string memory baseURI = "https://example.com/api/token/";
-    User memory user = getUserByNFTID(tokenId);
-    // Convert the struct values to string
-    string memory stakingAmountStr = uint256ToString(user.stakingAmount);
-    string memory stakingStatusStr = boolToString(user.stakingStatus);
-    string memory timestampStr = uint256ToString(user.timestamp);
+function checkValidUnstaking() external view returns (uint[] memory, uint[] memory) {
+    uint[] memory storeValues = new uint[](nftTokenAddress.getNextTokenId());
+    uint[] memory storeAmounts = new uint[](nftTokenAddress.getNextTokenId());
+    uint count = 0; // Counter for non-zero values
 
-    // Construct the complete metadata URI with the struct values
-    string memory tokenURI = string(
-        abi.encodePacked(
-            baseURI,
-            uint256ToString(tokenId),
-            "&stakingAmount=",
-            stakingAmountStr,
-            "&stakingStatus=",
-            stakingStatusStr,
-            "&timestamp=",
-            timestampStr
-        )
-    );
+    for (uint i = 0; i < nftTokenAddress.getNextTokenId(); i++) {
+        if (unstakeTimestamp[i] != 0 && checkTimestamp(unstakeTimestamp[i]) >= UNSTAKE_TIME) {
+            storeValues[count] = i;
+            storeAmounts[count] = users[i].stakingAmount;
+            count++;
+        }
+    }
 
-    tokenURIs[tokenId] = tokenURI;
-} */
+    // Create new arrays with only non-zero values
+    uint[] memory nonZeroStoreValues = new uint[](count);
+    uint[] memory nonZeroStoreAmounts = new uint[](count);
+    for (uint j = 0; j < count; j++) {
+        nonZeroStoreValues[j] = storeValues[j];
+        nonZeroStoreAmounts[j] = storeAmounts[j];
+    }
 
-function setTokenURI(uint256 tokenId) public {
-    string memory baseURI = "https://example.com/api/token/";
-    User memory user = getUserByNFTID(tokenId);
-    // Convert the struct values to string
-    string memory stakingAmountStr = uint256ToString(user.stakingAmount);
-    string memory stakingStatusStr = boolToString(user.stakingStatus);
-    string memory timestampStr = uint256ToString(user.timestamp);
+    return (nonZeroStoreValues, nonZeroStoreAmounts);
+}
 
-    // Construct the metadata JSON object
-    string memory metadata = string(
-        abi.encodePacked(
-            "{",
-            '"stakingAmount": "', stakingAmountStr, '",',
-            '"stakingStatus": "', stakingStatusStr, '",',
-            '"timestamp": "', timestampStr, '"',
-            "}"
-        )
-    );
+function ownerUnstake(uint nftID) public payable{
 
-    // Set the token's metadata URI
-    string memory tokenURI = string(abi.encodePacked(baseURI, uint256ToString(tokenId)));
-    tokenURIs[tokenId] = tokenURI;
-
-    // Store the metadata
-    //_setTokenURI(tokenId, metadata);
+     
 }
 
 
-
-// Function to see how much is staked by users, seperated by stakingStatus
-function totalStakedAmounts() external view returns(uint, uint){
-
-    uint totalStakingAmount = 0;
-    uint totalUnstaking = 0;
-
-    // Calculate the cumulative staking amounts of users with stakingStatus set to true
-    for (uint i = 0; i < nftTokenAddress.getNextTokenId(); i++) {
-        if (users[i].stakingStatus) {
-            totalStakingAmount += users[i].stakingAmount;
-        }
-        else {
-            totalUnstaking += users[i].stakingAmount;
-        }
-    }
-    return (totalStakingAmount, totalUnstaking);
-}  
-
-
-    /*///////////////////////////////////////////////////////////////
-                        Internal Helper Functions
+/*///////////////////////////////////////////////////////////////
+                        Main Functions
+        -----------------------------------------------------
+                        Calculating Winner Functions
     //////////////////////////////////////////////////////////////*/
 
 // Generate a random number using current blockchain data and a random input.
@@ -163,6 +152,14 @@ function generateRandomNumber(uint256 input) internal view returns (uint256) {
     uint256 randomNumber = uint256(keccak256(abi.encodePacked(block.timestamp, block.number, input)));
     return randomNumber;
 } 
+
+function findWinningNFTAddress() public view returns(address) {
+    uint winningID = calculateWinningNFTID();
+    address winner = addresses[winningID];
+
+    emit winnerChosen(winner, users[winningID].stakingAmount);
+    return winner;
+}
 
 // Function to calculate the ID of the winning NFTID. 
 // Chances of winning are proportional to the amount staked by the users.
@@ -194,7 +191,54 @@ function calculateWinningNFTID() internal view returns (uint) {
     revert("No winner found"); // This should never happen if there is at least one eligible user
 }
 
+/*///////////////////////////////////////////////////////////////
+                        Main Functions
+        -----------------------------------------------------
+                    Token URI and Metadata Functions
+    //////////////////////////////////////////////////////////////*/
+function setTokenURI(uint256 tokenId) public {
+    string memory baseURI = "https://example.com/api/token/";
+    User memory user = getUserByNFTID(tokenId);
+    // Convert the struct values to string
+    string memory stakingAmountStr = uint256ToString(user.stakingAmount);
+    string memory stakingStatusStr = boolToString(user.stakingStatus);
+    string memory initialTimestampStr = uint256ToString(user.initialTimestamp);
 
+    // Construct the metadata JSON object
+    string memory metadata = string(
+        abi.encodePacked(
+            "{",
+            '"stakingAmount": "', stakingAmountStr, '",',
+            '"stakingStatus": "', stakingStatusStr, '",',
+            '"initialTimestamp": "', initialTimestampStr, '"',
+            "}"
+        )
+    );
+
+    // Set the token's metadata URI
+    string memory tokenURI = string(abi.encodePacked(baseURI, uint256ToString(tokenId)));
+    tokenURIs[tokenId] = tokenURI;
+
+    // Store the metadata
+    //_setTokenURI(tokenId, metadata);
+}
+
+
+/*///////////////////////////////////////////////////////////////
+                        Helper Functions
+        -----------------------------------------------------
+                        Timestamp Functions
+    //////////////////////////////////////////////////////////////*/
+function checkTimestamp(uint initialTimestamp) internal returns (uint) {
+    return block.timestamp - initialTimestamp; 
+}
+
+
+/*///////////////////////////////////////////////////////////////
+                        Helper Functions
+        -----------------------------------------------------
+                        Conversion Functions
+    //////////////////////////////////////////////////////////////*/
 
 // Helper function to convert addresses to strings
 function addressToString(address _address) internal pure returns (string memory) {
@@ -240,6 +284,47 @@ function boolToString(bool _value) internal pure returns (string memory) {
     return _value ? "true" : "false";
 }
 
+/*///////////////////////////////////////////////////////////////
+                         Helper Functions
+        -----------------------------------------------------
+                         Getter Functions
+    //////////////////////////////////////////////////////////////*/
+
+
+function getUserByNFTID(uint _nftID) external view returns (User memory) {
+    User memory user = users[_nftID];
+    return user;
+}
+
+// Function to see how much is staked by users, seperated by stakingStatus
+function totalStakedAmounts() external view returns(uint, uint){
+
+    uint totalStakingAmount = 0;
+    uint totalUnstaking = 0;
+
+    // Calculate the cumulative staking amounts of users with stakingStatus set to true
+    for (uint i = 0; i < nftTokenAddress.getNextTokenId(); i++) {
+        if (users[i].stakingStatus) {
+            totalStakingAmount += users[i].stakingAmount;
+        }
+        else {
+            totalUnstaking += users[i].stakingAmount;
+        }
+    }
+    return (totalStakingAmount, totalUnstaking);
+}  
+/*///////////////////////////////////////////////////////////////
+                         Helper Functions
+        -----------------------------------------------------
+                         Utility Functions
+    //////////////////////////////////////////////////////////////*/
+    function _msgSender() internal view returns (address) {
+        return msg.sender;
+    }
+
+    function _msgValue() internal view returns (uint) {
+        return msg.value;
+    }
 
 
     /*///////////////////////////////////////////////////////////////
@@ -248,6 +333,7 @@ function boolToString(bool _value) internal pure returns (string memory) {
 
     event receivedFunds(address sender, uint _amount);
     event winnerChosen(address winner, uint stakedAmount);
+    event startedUnstaking(uint nftID, uint unstakingAmount, uint timestamp);
 
 
     /*///////////////////////////////////////////////////////////////
@@ -265,8 +351,6 @@ function boolToString(bool _value) internal pure returns (string memory) {
     function _canSetOwner() internal view virtual override returns (bool) {
         return msg.sender == owner();
     }
-
-
 
     /*///////////////////////////////////////////////////////////////
                             Contract Functions
