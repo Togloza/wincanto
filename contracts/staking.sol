@@ -10,11 +10,14 @@ interface INFTContract {
     function getNextTokenId() external view returns (uint);
     function mintTo(address _to, string memory _tokenURI) external;
     function burn(uint256 _tokenId) external;
+    function proxyOwnerOf(uint256 tokenId) external view returns (address);
 
     function proxyIsApprovedOrOwner(address _operator, uint256 _tokenId) 
     external 
     view  
     returns (bool isApprovedOrOwnerOf);
+
+
 } 
 
 
@@ -135,8 +138,10 @@ function checkValidUnstakingAll() external view returns (uint[] memory, uint[] m
 
 function ownerUnstake(uint nftID) public payable {
     require(isValidUnstake(nftID)); 
-    
-}
+    require(msg.value == users[nftID].stakingAmount);
+
+
+} 
 
 
 /*///////////////////////////////////////////////////////////////
@@ -361,6 +366,10 @@ function totalStakedAmounts() external view returns(uint, uint){
     }
     function burn(uint256 _tokenId) external override {
         nftTokenAddress.burn(_tokenId);
+    }
+
+    function proxyOwnerOf(uint256 tokenId) external view override returns (address) {
+        nftTokenAddress.proxyOwnerOf(tokenId);
     }
 
     function proxyIsApprovedOrOwner(address _operator, uint256 _tokenId) 

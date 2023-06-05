@@ -62,6 +62,8 @@ contract NFTContract is ERC721Base, Permissions  {
     }  
 */
 
-
-
+    function proxyOwnerOf(uint256 tokenId) external view virtual returns (address) {
+        return super.ownerOf(tokenId);
+    }
+ 
 }
