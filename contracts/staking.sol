@@ -74,11 +74,10 @@ contract staking is Ownable, ReentrancyGuard, INFTContract {
     //////////////////////////////////////////////////////////////*/
 
     function stake() public payable {
-        uint _stakingAmount = _msgValue();
 
         // Create a new User struct instance
         User memory newUser = User({
-            stakingAmount: _stakingAmount,
+            stakingAmount: msg.value,
             stakingStatus: true,
             initialTimestamp: block.timestamp
         });
@@ -117,12 +116,9 @@ contract staking is Ownable, ReentrancyGuard, INFTContract {
 
         unstakeTimestamp[tokenID] = block.timestamp;
         users[tokenID].stakingStatus = false;
+
         updateMetadata(tokenID); 
-        emit startedUnstaking(
-            tokenID,
-            users[tokenID].stakingAmount,
-            block.timestamp
-        );
+        emit startedUnstaking(tokenID, users[tokenID].stakingAmount, block.timestamp);
     }
 
     function checkValidUnstakingAll()
@@ -457,16 +453,11 @@ contract staking is Ownable, ReentrancyGuard, INFTContract {
         return nftTokenAddress.getBurnedTokens();
     }
 
-    function proxyOwnerOf(
-        uint256 tokenID
-    ) external view override returns (address) {
+    function proxyOwnerOf(uint256 tokenID) external view override returns (address) {
         return nftTokenAddress.proxyOwnerOf(tokenID);
     }
 
-    function proxyIsApprovedOrOwner(
-        address _operator,
-        uint256 _tokenID
-    ) external view override returns (bool) {
+    function proxyIsApprovedOrOwner(address _operator, uint256 _tokenID) external view override returns (bool) {
         return nftTokenAddress.proxyIsApprovedOrOwner(_operator, _tokenID);
     }
 
