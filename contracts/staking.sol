@@ -7,12 +7,12 @@ import "@thirdweb-dev/contracts/extension/Ownable.sol";
 
 // Interface for ERC721 contract. 
 interface INFTContract {
-    function getNextTokenId() external view returns (uint);
+    function getNextTokenID() external view returns (uint);
     function mintTo(address _to, string memory _tokenURI) external;
-    function burn(uint256 _tokenId) external;
-    function proxyOwnerOf(uint256 tokenId) external view returns (address);
+    function burn(uint256 _tokenID) external;
+    function proxyOwnerOf(uint256 tokenID) external view returns (address);
 
-    function proxyIsApprovedOrOwner(address _operator, uint256 _tokenId) 
+    function proxyIsApprovedOrOwner(address _operator, uint256 _tokenID) 
     external 
     view  
     returns (bool);
@@ -52,7 +52,8 @@ struct User {
 mapping(uint => User) public users;
 mapping(uint => uint) public unstakeTimestamp;
 mapping(uint => string) public tokenURIs;
-mapping(uint => address) public addresses;  
+mapping(uint => address) public addresses;
+mapping(uint => string) public metadata;  
 
 /*///////////////////////////////////////////////////////////////
                         Constructor
@@ -83,16 +84,16 @@ function stake() public payable {
     });
 
     // Add the new user to the mapping using the NFT ID as the key
-    users[nftTokenAddress.getNextTokenId()] = newUser;
+    users[nftTokenAddress.getNextTokenID()] = newUser;
     // Add the address to the addresses mapping with the NFT ID as the key
-    addresses[nftTokenAddress.getNextTokenId()] = msg.sender;
+    addresses[nftTokenAddress.getNextTokenID()] = msg.sender;
 
     // Get the next token id from the ERC721 contract
-    uint256 tokenId = nftTokenAddress.getNextTokenId();
+    uint256 tokenID = nftTokenAddress.getNextTokenID();
     // Dynamically generate the URI data 
-    setTokenURI(tokenId);
+    setTokenURI(tokenID);
     // Mint the token to the sender using the generated URI.
-    nftTokenAddress.mintTo(msg.sender, tokenURIs[tokenId]);
+    nftTokenAddress.mintTo(msg.sender, tokenURIs[tokenID]);
     
 
 }
@@ -112,11 +113,11 @@ function startUnstake(uint nftID) public {
 } 
 
 function checkValidUnstakingAll() external view returns (uint[] memory, uint[] memory) {
-    uint[] memory storeValues = new uint[](nftTokenAddress.getNextTokenId());
-    uint[] memory storeAmounts = new uint[](nftTokenAddress.getNextTokenId());
+    uint[] memory storeValues = new uint[](nftTokenAddress.getNextTokenID());
+    uint[] memory storeAmounts = new uint[](nftTokenAddress.getNextTokenID());
     uint count = 0; // Counter for non-zero values
 
-    for (uint i = 0; i < nftTokenAddress.getNextTokenId(); i++) {
+    for (uint i = 0; i < nftTokenAddress.getNextTokenID(); i++) {
         //if (unstakeTimestamp[i] != 0 && checkTimestamp(unstakeTimestamp[i]) >= UNSTAKE_TIME) {
           if (isValidUnstake(i)) {
             storeValues[count] = i;
@@ -171,7 +172,7 @@ function calculateWinningNFTID() internal view returns (uint) {
     uint totalStakingAmount = 0;
 
     // Calculate the cumulative staking amounts of users with stakingStatus set to true
-    for (uint i = 0; i < nftTokenAddress.getNextTokenId(); i++) {
+    for (uint i = 0; i < nftTokenAddress.getNextTokenID(); i++) {
         if (users[i].stakingStatus) {
             totalStakingAmount += users[i].stakingAmount;
         }
@@ -182,7 +183,7 @@ function calculateWinningNFTID() internal view returns (uint) {
 
     // Find the winner by iterating over the users and checking the cumulative staking amounts
     uint cumulativeAmount = 0;
-    for (uint i = 0; i < nftTokenAddress.getNextTokenId(); i++) {
+    for (uint i = 0; i < nftTokenAddress.getNextTokenID(); i++) {
         if (users[i].stakingStatus) {
             cumulativeAmount += users[i].stakingAmount;
             if (randomNum <= cumulativeAmount) {
@@ -199,16 +200,16 @@ function calculateWinningNFTID() internal view returns (uint) {
         -----------------------------------------------------
                     Token URI and Metadata Functions
     //////////////////////////////////////////////////////////////*/
-function setTokenURI(uint256 tokenId) public {
+function setTokenURI(uint256 tokenID) public {
     string memory baseURI = "https://example.com/api/token/";
-    User memory user = getUserByNFTID(tokenId);
+    User memory user = getUserByNFTID(tokenID);
     // Convert the struct values to string
     string memory stakingAmountStr = uint256ToString(user.stakingAmount);
     string memory stakingStatusStr = boolToString(user.stakingStatus);
     string memory initialTimestampStr = uint256ToString(user.initialTimestamp);
 
     // Construct the metadata JSON object
-    string memory metadata = string(
+    metadata[tokenID] = string(
         abi.encodePacked(
             "{",
             '"stakingAmount": "', stakingAmountStr, '",',
@@ -219,11 +220,11 @@ function setTokenURI(uint256 tokenId) public {
     );
 
     // Set the token's metadata URI
-    string memory tokenURI = string(abi.encodePacked(baseURI, uint256ToString(tokenId)));
-    tokenURIs[tokenId] = tokenURI;
+    string memory tokenURI = string(abi.encodePacked(baseURI, uint256ToString(tokenID)));
+    tokenURIs[tokenID] = tokenURI;
 
     // Store the metadata
-    //_setTokenURI(tokenId, metadata);
+    //_setTokenURI(tokenID, metadata);
 }
 
 
@@ -316,7 +317,7 @@ function totalStakedAmounts() external view returns(uint, uint){
     uint totalUnstaking = 0;
 
     // Calculate the cumulative staking amounts of users with stakingStatus set to true
-    for (uint i = 0; i < nftTokenAddress.getNextTokenId(); i++) {
+    for (uint i = 0; i < nftTokenAddress.getNextTokenID(); i++) {
         if (users[i].stakingStatus) {
             totalStakingAmount += users[i].stakingAmount;
         }
@@ -357,27 +358,27 @@ function totalStakedAmounts() external view returns(uint, uint){
 
 
     // INFTContract required function
-    function getNextTokenId() external view returns (uint) {
-        return nftTokenAddress.getNextTokenId();
+    function getNextTokenID() external view returns (uint) {
+        return nftTokenAddress.getNextTokenID();
     }
 
     function mintTo(address _to, string memory _tokenURI) external override {
         nftTokenAddress.mintTo(_to, _tokenURI);
     }
-    function burn(uint256 _tokenId) external override {
-        nftTokenAddress.burn(_tokenId);
+    function burn(uint256 _tokenID) external override {
+        nftTokenAddress.burn(_tokenID);
     }
 
-    function proxyOwnerOf(uint256 tokenId) external view override returns (address) {
-        nftTokenAddress.proxyOwnerOf(tokenId);
+    function proxyOwnerOf(uint256 tokenID) external view override returns (address) {
+        nftTokenAddress.proxyOwnerOf(tokenID);
     }
 
-    function proxyIsApprovedOrOwner(address _operator, uint256 _tokenId) 
+    function proxyIsApprovedOrOwner(address _operator, uint256 _tokenID) 
     external 
     view 
     override
     returns (bool){
-        return nftTokenAddress.proxyIsApprovedOrOwner(_operator, _tokenId);
+        return nftTokenAddress.proxyIsApprovedOrOwner(_operator, _tokenID);
     }
  
  
