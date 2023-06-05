@@ -8,7 +8,7 @@ import "@thirdweb-dev/contracts/extension/Permissions.sol";
 contract NFTContract is ERC721Base, Permissions  {
 
     // mapping(uint => address) nftOwners;
-    mapping(uint => bool) burnedToken; 
+    mapping(uint => bool) burnedTokens; 
 
     bytes32 public constant MINTER = keccak256("MINTER_ROLE");
     uint public number;
@@ -33,39 +33,47 @@ contract NFTContract is ERC721Base, Permissions  {
     }
   
     function proxyMintTo(address _to, string memory _tokenURI) external virtual {
-    //    nftOwners[nextTokenIdToMint()] = msg.sender; 
+    //    nftOwners[nextTokenIDToMint()] = msg.sender; 
         super.mintTo(_to, _tokenURI);
     }
 
-    function proxyIsApprovedOrOwner(address _operator, uint256 _tokenId) 
+    function proxyIsApprovedOrOwner(address _operator, uint256 _tokenID) 
     external 
     view
     virtual  
     returns (bool) {
-        return super.isApprovedOrOwner(_operator, _tokenId);
+        return super.isApprovedOrOwner(_operator, _tokenID);
     }
 
-    function getNextTokenId() public view virtual returns (uint) {
+    function getNextTokenID() public view virtual returns (uint) {
         return nextTokenIdToMint();
     }
-    
-    function burn(uint256 _tokenId) external virtual override {
-        burnedToken[_tokenId] = true;
-        super._burn(_tokenId, true);
+     
+    function burn(uint256 _tokenID) external virtual override {
+        burnedTokens[_tokenID] = true;
+        super._burn(_tokenID, true);
     }
+ 
+    function getBurnedTokens() external view returns (bool[] memory){
+        bool[] memory burnedTokensArray = new bool[](getNextTokenID());
+            for (uint i = 0; i < getNextTokenID(); i++){
+                burnedTokensArray[i] = burnedTokens[i];
+            }
+        return burnedTokensArray;
+    } 
 
 /*    function safeTransferFrom( 
         address from,
         address to,
-        uint256 tokenId
+        uint256 tokenID
     ) public virtual override onlyAllowedOperator(from) {
-        nftOwners[tokenId] = to; 
-        super.safeTransferFrom(from, to, tokenId);
+        nftOwners[tokenID] = to; 
+        super.safeTransferFrom(from, to, tokenID);
     }  
 */
 
-    function proxyOwnerOf(uint256 tokenId) external view virtual returns (address) {
-        return super.ownerOf(tokenId);
+    function proxyOwnerOf(uint256 tokenID) external view virtual returns (address) {
+        return super.ownerOf(tokenID);
     }
  
 }
