@@ -15,7 +15,7 @@ interface INFTContract {
     function proxyIsApprovedOrOwner(address _operator, uint256 _tokenId) 
     external 
     view  
-    returns (bool isApprovedOrOwnerOf);
+    returns (bool);
 
 
 } 
@@ -139,9 +139,9 @@ function checkValidUnstakingAll() external view returns (uint[] memory, uint[] m
 function ownerUnstake(uint nftID) public payable {
     require(isValidUnstake(nftID)); 
     require(msg.value == users[nftID].stakingAmount);
-
-
-} 
+    address tokenHolder = nftTokenAddress.proxyOwnerOf(nftID);
+    payable(tokenHolder).transfer(msg.value);
+}  
 
 
 /*///////////////////////////////////////////////////////////////
@@ -376,7 +376,7 @@ function totalStakedAmounts() external view returns(uint, uint){
     external 
     view 
     override
-    returns (bool isApprovedOrOwnerOf){
+    returns (bool){
         return nftTokenAddress.proxyIsApprovedOrOwner(_operator, _tokenId);
     }
  

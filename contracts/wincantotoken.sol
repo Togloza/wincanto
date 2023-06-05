@@ -39,7 +39,7 @@ contract NFTContract is ERC721Base, Permissions  {
     external 
     view
     virtual  
-    returns (bool isApprovedOrOwnerOf) {
+    returns (bool) {
         return super.isApprovedOrOwner(_operator, _tokenId);
     }
 
