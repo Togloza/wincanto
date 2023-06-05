@@ -429,7 +429,7 @@ contract staking is Ownable, ReentrancyGuard, INFTContract {
     function proxyOwnerOf(
         uint256 tokenID
     ) external view override returns (address) {
-        nftTokenAddress.proxyOwnerOf(tokenID);
+        return nftTokenAddress.proxyOwnerOf(tokenID);
     }
 
     function proxyIsApprovedOrOwner(
