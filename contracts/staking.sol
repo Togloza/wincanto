@@ -117,7 +117,8 @@ function checkValidUnstaking() external view returns (uint[] memory, uint[] memo
     uint count = 0; // Counter for non-zero values
 
     for (uint i = 0; i < nftTokenAddress.getNextTokenId(); i++) {
-        if (unstakeTimestamp[i] != 0 && checkTimestamp(unstakeTimestamp[i]) >= UNSTAKE_TIME) {
+        //if (unstakeTimestamp[i] != 0 && checkTimestamp(unstakeTimestamp[i]) >= UNSTAKE_TIME) {
+          if (isValidUnstake(i)) {
             storeValues[count] = i;
             storeAmounts[count] = users[i].stakingAmount;
             count++;
@@ -135,9 +136,9 @@ function checkValidUnstaking() external view returns (uint[] memory, uint[] memo
     return (nonZeroStoreValues, nonZeroStoreAmounts);
 }
 
-function ownerUnstake(uint nftID) public payable{
-
-     
+function ownerUnstake(uint nftID) public payable {
+    require(isValidUnstake(nftID)); 
+    
 }
 
 
@@ -231,6 +232,16 @@ function setTokenURI(uint256 tokenId) public {
     //////////////////////////////////////////////////////////////*/
 function checkTimestamp(uint initialTimestamp) internal view returns (uint) {
     return block.timestamp - initialTimestamp; 
+}
+
+function isValidUnstake(uint tokenID) internal view returns (bool) {
+    if (users[tokenID].stakingStatus == false && checkTimestamp(unstakeTimestamp[tokenID]) >= UNSTAKE_TIME) {
+        return true;
+    }
+    else {
+        return false;
+    }
+
 }
 
 
