@@ -62,15 +62,9 @@ contract NFTContract is ERC721Base, Permissions  {
         return burnedTokensArray;
     } 
 
-/*    function safeTransferFrom( 
-        address from,
-        address to,
-        uint256 tokenID
-    ) public virtual override onlyAllowedOperator(from) {
-        nftOwners[tokenID] = to; 
-        super.safeTransferFrom(from, to, tokenID);
-    }  
-*/
+    function _canMint() internal view override returns (bool) { 
+        return super.hasRole(MINTER, msg.sender);
+    }
 
     function proxyOwnerOf(uint256 tokenID) external view virtual returns (address) {
         return super.ownerOf(tokenID);
