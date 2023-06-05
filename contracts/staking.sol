@@ -3,12 +3,9 @@ pragma solidity ^0.8.0;
 
 /// Import relevant contracts
 import "@thirdweb-dev/contracts/openzeppelin-presets/security/ReentrancyGuard.sol";
-
 import "@thirdweb-dev/contracts/extension/Ownable.sol";
 
-
-
-// Interface for ERC721 contract to get tokenId values. 
+// Interface for ERC721 contract. 
 interface INFTContract {
     function getNextTokenId() external view returns (uint);
     function mintTo(address _to, string memory _tokenURI) external;
@@ -111,7 +108,7 @@ function startUnstake(uint nftID) public {
     emit startedUnstaking(nftID, users[nftID].stakingAmount, block.timestamp);
 } 
 
-function checkValidUnstaking() external view returns (uint[] memory, uint[] memory) {
+function checkValidUnstakingAll() external view returns (uint[] memory, uint[] memory) {
     uint[] memory storeValues = new uint[](nftTokenAddress.getNextTokenId());
     uint[] memory storeAmounts = new uint[](nftTokenAddress.getNextTokenId());
     uint count = 0; // Counter for non-zero values
