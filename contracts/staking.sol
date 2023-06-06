@@ -90,6 +90,7 @@ contract staking is Ownable, ReentrancyGuard, INFTContract {
         uint256 tokenID = nftTokenAddress.getNextTokenID();
         // Dynamically generate the URI data
         setTokenURI(tokenID);
+        updateMetadata(tokenID);
         // Mint the token to the sender using the generated URI.
         nftTokenAddress.proxyMintTo(msg.sender, tokenURIs[tokenID]);
     } 
@@ -222,8 +223,6 @@ contract staking is Ownable, ReentrancyGuard, INFTContract {
     //////////////////////////////////////////////////////////////*/
     function setTokenURI(uint256 tokenID) public {
         string memory baseURI = "https://example.com/api/token/";
-
-        updateMetadata(tokenID);
 
         // Set the token's metadata URI
         string memory tokenURI = string(
