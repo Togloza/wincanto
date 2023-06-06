@@ -301,10 +301,10 @@ contract staking is Ownable, ReentrancyGuard, INFTContract {
         -----------------------------------------------------
                         Timestamp Functions
     //////////////////////////////////////////////////////////////*/
-    function checkTimestamp(uint initialTimestamp) internal view returns (uint) {
-        return block.timestamp - initialTimestamp;
+    function checkTimestamp(uint timestamp) internal view returns (uint) {
+        return block.timestamp - timestamp;
     }
-
+ 
     function isValidUnstake(uint tokenID) internal view returns (bool) {
         bool[] memory burnedTokens = nftTokenAddress.getBurnedTokens();
 
