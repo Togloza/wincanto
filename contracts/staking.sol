@@ -126,6 +126,7 @@ contract staking is Ownable, ReentrancyGuard, INFTContract {
         updateMetadata(tokenID); 
         emit startedUnstaking(tokenID, users[tokenID].stakingAmount, block.timestamp);
     }
+
     // Calculate how much is staked and in the process of unstaking
     function checkValidUnstakingAll() external view returns (uint[] memory, uint[] memory) {
         uint[] memory storeID = new uint[](nftTokenAddress.getNextTokenID());
@@ -150,6 +151,7 @@ contract staking is Ownable, ReentrancyGuard, INFTContract {
 
         return (nonZeroStoreID, nonZeroStoreAmounts);
     }
+
     // If isValidUnstake and approved, burn the NFT and send stakingAmount to tokenHolder.
     function Unstake(uint tokenID) public {
         require(isValidUnstake(tokenID), "Not valid token to unstake");
@@ -263,9 +265,8 @@ contract staking is Ownable, ReentrancyGuard, INFTContract {
         //_setTokenURI(tokenID, metadata);
     }
 
-    function getMetadata(uint tokenID) public view returns (string memory) {
-        string memory tokenMetadata = metadata[tokenID];
-        return tokenMetadata;
+    function getMetadata(uint tokenID) public view returns (string) {
+        return metadata[tokenID];
     }
 
     // This function updates the metadata for changes in the user struct. 
