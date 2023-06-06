@@ -149,12 +149,13 @@ contract staking is Ownable, ReentrancyGuard, INFTContract {
     function Unstake(uint tokenID) public {
         require(isValidUnstake(tokenID), "Not valid token to unstake");
         require(nftTokenAddress.proxyIsApprovedOrOwner(address(this), tokenID), "Contract not approved");
-        
+        // Find the owner of the token
         address tokenHolder = nftTokenAddress.proxyOwnerOf(tokenID);
         uint stakingAmount = users[tokenID].stakingAmount;
 
         require(address(this).balance >= stakingAmount, "Not enough tokens held in contract at the moment");
         // nftTokenAddress.proxyApproval(address(this), tokenID); Front end approval
+        // Burn token and transfer funds.
         nftTokenAddress.burn(tokenID); 
          
         payable(tokenHolder).transfer(stakingAmount);
