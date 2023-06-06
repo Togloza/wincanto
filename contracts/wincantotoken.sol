@@ -33,7 +33,7 @@ contract NFTContract is ERC721Base, Permissions  {
     }
   
     function proxyMintTo(address _to, string memory _tokenURI) external virtual {
-    //    nftOwners[nextTokenIDToMint()] = msg.sender; 
+        require(_canMint(), "Not authorized to mint");
         super.mintTo(_to, _tokenURI);
     }
 
