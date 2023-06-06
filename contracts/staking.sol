@@ -56,6 +56,7 @@ contract staking is Ownable, ReentrancyGuard, INFTContract {
     mapping(uint => uint) public unstakeTimestamp;
     mapping(uint => string) public tokenURIs;
     mapping(uint => string) public metadata;
+    mapping(address => uint) public winnerRewards;
 
     /*///////////////////////////////////////////////////////////////
                         Constructor
@@ -169,6 +170,8 @@ contract staking is Ownable, ReentrancyGuard, INFTContract {
 
     // Generate a random number using current blockchain data and a random input.
     function generateRandomNumber(uint256 input) internal view returns (uint256) {
+        // While miners can influece block.timestamp, block.number, the function is a read function
+        // And when we run the function is up to us and fairly random. 
         uint256 randomNumber = uint256(
             keccak256(abi.encodePacked(block.timestamp, block.number, input))
         );
@@ -178,11 +181,16 @@ contract staking is Ownable, ReentrancyGuard, INFTContract {
     function findWinningNFTAddress() public view returns (address, uint) {
         uint winningID = calculateWinningNFTID();
         address winner = nftTokenAddress.proxyOwnerOf(winningID);
-
-        // emit winnerChosen(winner, users[winningID].stakingAmount);
+        
         return (winner, winningID);
     }
 
+    function publishWinningAddress(address winnerAddress, uint winningAmount) external {
+        require(msg.sender == _owner); 
+        winnerRewards[winnerAddress] += winningAmount;
+        emit winnerChosen(winnerAddress, winningAmount);
+    }
+ 
     // Function to calculate the ID of the winning NFTID.
     // Chances of winning are proportional to the amount staked by the users.
     // Only NFTs with stakingStatus true are counted.
@@ -212,6 +220,25 @@ contract staking is Ownable, ReentrancyGuard, INFTContract {
 
         revert("No winner found"); // This should never happen if there is at least one eligible user
     }
+
+        /*///////////////////////////////////////////////////////////////
+                        Main Functions
+        -----------------------------------------------------
+                        Reward Functions
+    //////////////////////////////////////////////////////////////*/
+
+    function checkRewards() public view returns (uint){
+        return winnerRewards[msg.sender]; 
+    }
+    function claimRewards() external {
+        uint userRewards = winnerRewards[msg.sender];
+        require(userRewards >= 0, "No rewards claimable");
+        // Reset user rewards, send rewards, emit event.
+        winnerRewards[msg.sender] = 0;
+        payable(msg.sender).transfer(userRewards);
+        emit rewardsClaimed(msg.sender, userRewards);
+    } 
+
 
     /*///////////////////////////////////////////////////////////////
                         Main Functions
@@ -419,9 +446,10 @@ contract staking is Ownable, ReentrancyGuard, INFTContract {
     //////////////////////////////////////////////////////////////*/
 
     event receivedFunds(address sender, uint _amount);
-    event winnerChosen(address winner, uint stakedAmount);
+    event winnerChosen(address winner, uint winningAmount);
     event startedUnstaking(uint tokenID, uint unstakingAmount, uint timestamp);
     event depositedTokens(uint depositAmount, address sender, uint timestamp);
+    event rewardsClaimed(address winnerAddress, uint rewardAmount);
 
     /*///////////////////////////////////////////////////////////////
                             Interface Functions
