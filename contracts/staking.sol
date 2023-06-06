@@ -123,32 +123,27 @@ contract staking is Ownable, ReentrancyGuard, INFTContract {
     }
 
     function checkValidUnstakingAll() external view returns (uint[] memory, uint[] memory) {
-        uint[] memory storeValues = new uint[](
-            nftTokenAddress.getNextTokenID()
-        );
-        uint[] memory storeAmounts = new uint[](
-            nftTokenAddress.getNextTokenID()
-        );
+        uint[] memory storeID = new uint[](nftTokenAddress.getNextTokenID());
+        uint[] memory storeAmounts = new uint[](nftTokenAddress.getNextTokenID());
         uint count = 0; // Counter for non-zero values
 
         for (uint i = 0; i < nftTokenAddress.getNextTokenID(); i++) {
-            //if (unstakeTimestamp[i] != 0 && checkTimestamp(unstakeTimestamp[i]) >= UNSTAKE_TIME) {
             if (isValidUnstake(i)) {
-                storeValues[count] = i;
+                storeID[count] = i;
                 storeAmounts[count] = users[i].stakingAmount;
                 count++;
             }
         }
 
         // Create new arrays with only non-zero values
-        uint[] memory nonZeroStoreValues = new uint[](count);
+        uint[] memory nonZeroStoreID = new uint[](count);
         uint[] memory nonZeroStoreAmounts = new uint[](count);
         for (uint j = 0; j < count; j++) {
-            nonZeroStoreValues[j] = storeValues[j];
+            nonZeroStoreID[j] = storeID[j];
             nonZeroStoreAmounts[j] = storeAmounts[j];
         }
 
-        return (nonZeroStoreValues, nonZeroStoreAmounts);
+        return (nonZeroStoreID, nonZeroStoreAmounts);
     }
 
     function Unstake(uint tokenID) public {
