@@ -319,8 +319,6 @@ contract staking is Ownable, ReentrancyGuard, INFTContract {
         }
     }
 
-
-
     /*///////////////////////////////////////////////////////////////
                          Helper Functions
         -----------------------------------------------------
@@ -361,13 +359,6 @@ contract staking is Ownable, ReentrancyGuard, INFTContract {
         -----------------------------------------------------
                          Utility Functions
     //////////////////////////////////////////////////////////////*/
-    function _msgSender() internal view returns (address) {
-        return msg.sender;
-    }
-
-    function _msgValue() internal view returns (uint) {
-        return msg.value;
-    }
 
     // Function to withdraw tokens in case tokens are locked in the contract.
     function WithdrawTokens(uint _amount) external virtual {
