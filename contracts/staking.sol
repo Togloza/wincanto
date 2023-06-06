@@ -78,8 +78,9 @@ contract staking is Ownable, ReentrancyGuard, INFTContract {
                         Staking Logic
     //////////////////////////////////////////////////////////////*/
 
+    // Staking function, creates new user, set tokenURI and metadata, and mint NFT to sender.
     function stake() public payable {
-
+        require(msg.value >= 0, "Staking 0 tokens");
         // Create a new User struct instance
         User memory newUser = User({
             stakingAmount: msg.value,
@@ -125,7 +126,7 @@ contract staking is Ownable, ReentrancyGuard, INFTContract {
         updateMetadata(tokenID); 
         emit startedUnstaking(tokenID, users[tokenID].stakingAmount, block.timestamp);
     }
-
+    // Calculate how much is staked and in the process of unstaking
     function checkValidUnstakingAll() external view returns (uint[] memory, uint[] memory) {
         uint[] memory storeID = new uint[](nftTokenAddress.getNextTokenID());
         uint[] memory storeAmounts = new uint[](nftTokenAddress.getNextTokenID());
@@ -149,7 +150,7 @@ contract staking is Ownable, ReentrancyGuard, INFTContract {
 
         return (nonZeroStoreID, nonZeroStoreAmounts);
     }
-
+    // If isValidUnstake and approved, burn the NFT and send stakingAmount to tokenHolder.
     function Unstake(uint tokenID) public {
         require(isValidUnstake(tokenID), "Not valid token to unstake");
         require(nftTokenAddress.proxyIsApprovedOrOwner(address(this), tokenID), "Contract not approved");
@@ -180,14 +181,14 @@ contract staking is Ownable, ReentrancyGuard, INFTContract {
         );
         return randomNumber;
     }
-
+    // Read function to find the winning address and tokenID
     function findWinningNFTAddress() public view returns (address, uint) {
         uint winningID = calculateWinningNFTID();
         address winner = nftTokenAddress.proxyOwnerOf(winningID);
         
         return (winner, winningID);
     }
-
+    // Write function to update contract on winner and amount.
     function publishWinningAddress(address winnerAddress, uint winningAmount) external {
         require(msg.sender == _owner); 
         winnerRewards[winnerAddress] += winningAmount;
@@ -243,8 +244,6 @@ contract staking is Ownable, ReentrancyGuard, INFTContract {
         payable(msg.sender).transfer(userRewards);
         emit rewardsClaimed(msg.sender, userRewards);
     }
-
-
 
     /*///////////////////////////////////////////////////////////////
                         Main Functions
