@@ -230,7 +230,7 @@ contract staking is Ownable, ReentrancyGuard, INFTContract {
     function checkRewards() public view returns (uint){
         return winnerRewards[msg.sender]; 
     }
-    function claimRewards() external {
+    function claimRewards() public {
         uint userRewards = winnerRewards[msg.sender];
         require(userRewards >= 0, "No rewards claimable");
         // Reset user rewards, send rewards, emit event.
