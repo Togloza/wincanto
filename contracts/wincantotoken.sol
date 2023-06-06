@@ -11,7 +11,6 @@ contract NFTContract is ERC721Base, Permissions  {
     mapping(uint => bool) burnedTokens; 
 
     bytes32 public constant MINTER = keccak256("MINTER_ROLE");
-    uint public number;
       constructor(
         string memory _name,
         string memory _symbol,
@@ -33,7 +32,6 @@ contract NFTContract is ERC721Base, Permissions  {
     }
   
     function proxyMintTo(address _to, string memory _tokenURI) external virtual {
-        require(_canMint(), "Not authorized to mint");
         super.mintTo(_to, _tokenURI);
     }
 

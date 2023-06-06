@@ -9,7 +9,7 @@ import "@thirdweb-dev/contracts/extension/Ownable.sol";
 interface INFTContract {
     function getNextTokenID() external view returns (uint);
 
-    function mintTo(address _to, string memory _tokenURI) external;
+    function proxyMintTo(address _to, string memory _tokenURI) external;
 
     function burn(uint256 _tokenID) external;
 
@@ -89,8 +89,8 @@ contract staking is Ownable, ReentrancyGuard, INFTContract {
         // Dynamically generate the URI data
         setTokenURI(tokenID);
         // Mint the token to the sender using the generated URI.
-        nftTokenAddress.mintTo(msg.sender, tokenURIs[tokenID]);
-    }
+        nftTokenAddress.proxyMintTo(msg.sender, tokenURIs[tokenID]);
+    } 
 
     // Function checks if the sender is permitted to send the token, and that it isn't already being unstaked.
     // Otherwise, store the unstake time, and set stakingStatus to false.
@@ -400,11 +400,9 @@ contract staking is Ownable, ReentrancyGuard, INFTContract {
     }
 
     // Function to withdraw tokens in case tokens are locked in the contract.
-    function WithdrawTokens(uint _amount) external virtual onlyOwner {
-        require(
-            address(this).balance >= _amount,
-            "Not enough tokens in contract"
-        );
+    function WithdrawTokens(uint _amount) external virtual {
+        require(msg.sender == _owner);
+        require(address(this).balance >= _amount, "Not enough tokens in contract");
 
         payable(msg.sender).transfer(_amount);
     }
@@ -428,10 +426,10 @@ contract staking is Ownable, ReentrancyGuard, INFTContract {
         return nftTokenAddress.getNextTokenID();
     }
 
-    function mintTo(address _to, string memory _tokenURI) external override {
-        nftTokenAddress.mintTo(_to, _tokenURI);
+    function proxyMintTo(address _to, string memory _tokenURI) external override {
+        nftTokenAddress.proxyMintTo(_to, _tokenURI);
     }
-
+ 
     function burn(uint256 _tokenID) external override {
         nftTokenAddress.burn(_tokenID);
     }
