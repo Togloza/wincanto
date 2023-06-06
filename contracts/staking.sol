@@ -31,7 +31,7 @@ contract staking is Ownable, ReentrancyGuard, INFTContract {
     //////////////////////////////////////////////////////////////*/
     // Unstake time required by the CANTO network.
     //uint constant UNSTAKE_TIME = 21 days;
-    uint constant UNSTAKE_TIME = 21 minutes;
+    uint constant UNSTAKE_TIME = 5 minutes;
     // Owner's address. 
     address private _owner;
 
@@ -151,7 +151,7 @@ contract staking is Ownable, ReentrancyGuard, INFTContract {
 
     function Unstake(uint tokenID) public {
         require(isValidUnstake(tokenID), "Not valid token to unstake");
-        require(nftTokenAddress.proxyIsApprovedOrOwner(address(this), tokenID), "Not approved");
+        require(nftTokenAddress.proxyIsApprovedOrOwner(address(this), tokenID), "Contract not approved");
         
         address tokenHolder = nftTokenAddress.proxyOwnerOf(tokenID);
         uint stakingAmount = users[tokenID].stakingAmount;
@@ -177,12 +177,12 @@ contract staking is Ownable, ReentrancyGuard, INFTContract {
         return randomNumber;
     }
 
-    function findWinningNFTAddress() public view returns (address) {
+    function findWinningNFTAddress() public view returns (address, uint) {
         uint winningID = calculateWinningNFTID();
         address winner = nftTokenAddress.proxyOwnerOf(winningID);
 
         // emit winnerChosen(winner, users[winningID].stakingAmount);
-        return winner;
+        return (winner, winningID);
     }
 
     // Function to calculate the ID of the winning NFTID.
