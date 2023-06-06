@@ -103,6 +103,7 @@ contract staking is Ownable, ReentrancyGuard, INFTContract {
             nftTokenAddress.proxyIsApprovedOrOwner(msg.sender, tokenID),
             "Not owner of token"
         );
+        // If already unstaking, revert and send message.
         if (unstakeTimestamp[tokenID] != 0) {
             revert(
                 string(
@@ -113,10 +114,10 @@ contract staking is Ownable, ReentrancyGuard, INFTContract {
                 )
             );
         }
-
+        // Set unstakeTimestamp to current time, and set stakingStatus to false.
         unstakeTimestamp[tokenID] = block.timestamp;
         users[tokenID].stakingStatus = false;
-
+        // Update the metadata to reflect the staking status and emit event.
         updateMetadata(tokenID); 
         emit startedUnstaking(tokenID, users[tokenID].stakingAmount, block.timestamp);
     }
