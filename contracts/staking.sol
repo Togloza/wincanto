@@ -157,7 +157,7 @@ contract staking is Ownable, ReentrancyGuard, INFTContract {
         uint stakingAmount = users[tokenID].stakingAmount;
 
         require(address(this).balance >= stakingAmount, "Not enough tokens held in contract at the moment");
-        nftTokenAddress.proxyApproval(address(this), tokenID);
+        // nftTokenAddress.proxyApproval(address(this), tokenID); Front end approval
         nftTokenAddress.burn(tokenID); 
          
         payable(tokenHolder).transfer(stakingAmount);
