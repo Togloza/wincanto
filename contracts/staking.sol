@@ -35,6 +35,9 @@ contract staking is Ownable, ReentrancyGuard, INFTContract {
     // Owner's address. 
     address private _owner;
 
+    // Total Rewards in contract
+    uint public totalRewards;
+
     // Initialize ERC721 token address.
     INFTContract nftTokenAddress;
 
@@ -188,6 +191,7 @@ contract staking is Ownable, ReentrancyGuard, INFTContract {
     function publishWinningAddress(address winnerAddress, uint winningAmount) external {
         require(msg.sender == _owner); 
         winnerRewards[winnerAddress] += winningAmount;
+        totalRewards += winningAmount;
         emit winnerChosen(winnerAddress, winningAmount);
     }
  
@@ -235,9 +239,11 @@ contract staking is Ownable, ReentrancyGuard, INFTContract {
         require(userRewards >= 0, "No rewards claimable");
         // Reset user rewards, send rewards, emit event.
         winnerRewards[msg.sender] = 0;
+        totalRewards -= userRewards;
         payable(msg.sender).transfer(userRewards);
         emit rewardsClaimed(msg.sender, userRewards);
-    } 
+    }
+
 
 
     /*///////////////////////////////////////////////////////////////
@@ -414,6 +420,10 @@ contract staking is Ownable, ReentrancyGuard, INFTContract {
 
     function getContractBalance() external view returns (uint){
         return address(this).balance;
+    }
+
+    function getTotalRewards() external view returns (uint){
+        return totalRewards;
     }
 
     /*///////////////////////////////////////////////////////////////
