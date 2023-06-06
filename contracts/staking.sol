@@ -255,7 +255,7 @@ contract staking is Ownable, ReentrancyGuard, INFTContract {
                 '"',
                 "}"
             )
-        );
+        ); 
 
     }
 
