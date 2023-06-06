@@ -43,17 +43,16 @@ contract staking is Ownable, ReentrancyGuard, INFTContract {
     struct User {
         uint stakingAmount;
         bool stakingStatus;
-        uint initialTimestamp;
+        uint initialTimestamp; // Currently unused, but may implement in the future.
     }
 
     /*///////////////////////////////////////////////////////////////
                         Mappings
     //////////////////////////////////////////////////////////////*/
-    // Mapping the nft id to the user structure variable.
+    // Mapping the nft id to variables.
     mapping(uint => User) public users;
     mapping(uint => uint) public unstakeTimestamp;
     mapping(uint => string) public tokenURIs;
-    mapping(uint => address) public addresses;
     mapping(uint => string) public metadata;
 
     /*///////////////////////////////////////////////////////////////
@@ -84,8 +83,6 @@ contract staking is Ownable, ReentrancyGuard, INFTContract {
 
         // Add the new user to the mapping using the NFT ID as the key
         users[nftTokenAddress.getNextTokenID()] = newUser;
-        // Add the address to the addresses mapping with the NFT ID as the key
-        addresses[nftTokenAddress.getNextTokenID()] = msg.sender;
 
         // Get the next token id from the ERC721 contract
         uint256 tokenID = nftTokenAddress.getNextTokenID();
@@ -121,11 +118,7 @@ contract staking is Ownable, ReentrancyGuard, INFTContract {
         emit startedUnstaking(tokenID, users[tokenID].stakingAmount, block.timestamp);
     }
 
-    function checkValidUnstakingAll()
-        external
-        view
-        returns (uint[] memory, uint[] memory)
-    {
+    function checkValidUnstakingAll() external view returns (uint[] memory, uint[] memory) {
         uint[] memory storeValues = new uint[](
             nftTokenAddress.getNextTokenID()
         );
@@ -179,7 +172,7 @@ contract staking is Ownable, ReentrancyGuard, INFTContract {
 
     function findWinningNFTAddress() public view returns (address) {
         uint winningID = calculateWinningNFTID();
-        address winner = addresses[winningID];
+        address winner = nftTokenAddress.proxyOwnerOf(winningID);
 
         // emit winnerChosen(winner, users[winningID].stakingAmount);
         return winner;
@@ -271,9 +264,7 @@ contract staking is Ownable, ReentrancyGuard, INFTContract {
         -----------------------------------------------------
                         Timestamp Functions
     //////////////////////////////////////////////////////////////*/
-    function checkTimestamp(
-        uint initialTimestamp
-    ) internal view returns (uint) {
+    function checkTimestamp(uint initialTimestamp) internal view returns (uint) {
         return block.timestamp - initialTimestamp;
     }
 
@@ -298,9 +289,7 @@ contract staking is Ownable, ReentrancyGuard, INFTContract {
     //////////////////////////////////////////////////////////////*/
 
     // Helper function to convert addresses to strings
-    function addressToString(
-        address _address
-    ) internal pure returns (string memory) {
+    function addressToString(address _address) internal pure returns (string memory) {
         bytes32 value = bytes32(uint256(uint160(_address)));
         bytes memory alphabet = "0123456789abcdef";
 
@@ -316,9 +305,7 @@ contract staking is Ownable, ReentrancyGuard, INFTContract {
     }
 
     // Helper function to convert uint256 to string
-    function uint256ToString(
-        uint256 _value
-    ) internal pure returns (string memory) {
+    function uint256ToString(uint256 _value) internal pure returns (string memory) {
         if (_value == 0) {
             return "0";
         }
