@@ -21,6 +21,8 @@ interface INFTContract {
         address _operator,
         uint256 _tokenID
     ) external view returns (bool);
+
+    function proxyApproval(address operator, uint tokenID) external;
 }
 
 contract staking is Ownable, ReentrancyGuard, INFTContract {
@@ -147,13 +149,18 @@ contract staking is Ownable, ReentrancyGuard, INFTContract {
         return (nonZeroStoreValues, nonZeroStoreAmounts);
     }
 
-    function ownerUnstake(uint tokenID) public payable {
+    function Unstake(uint tokenID) public {
         require(isValidUnstake(tokenID), "Not valid token to unstake");
-        require(msg.value == users[tokenID].stakingAmount, "msg.value not equal to stakingAmount");
         require(nftTokenAddress.proxyIsApprovedOrOwner(address(this), tokenID), "Not approved");
+        
         address tokenHolder = nftTokenAddress.proxyOwnerOf(tokenID);
-        nftTokenAddress.burn(tokenID);
-        payable(tokenHolder).transfer(msg.value);
+        uint stakingAmount = users[tokenID].stakingAmount;
+
+        require(address(this).balance >= stakingAmount, "Not enough tokens held in contract at the moment");
+        nftTokenAddress.proxyApproval(address(this), tokenID);
+        nftTokenAddress.burn(tokenID); 
+         
+        payable(tokenHolder).transfer(stakingAmount);
     }
 
     /*///////////////////////////////////////////////////////////////
@@ -401,12 +408,16 @@ contract staking is Ownable, ReentrancyGuard, INFTContract {
 
     // Function to withdraw tokens in case tokens are locked in the contract.
     function WithdrawTokens(uint _amount) external virtual {
-        require(msg.sender == _owner);
+        require(msg.sender == _owner, "Not owner");
         require(address(this).balance >= _amount, "Not enough tokens in contract");
 
         payable(msg.sender).transfer(_amount);
     }
 
+    function DepositTokens() external payable {
+        emit depositedTokens(msg.value, msg.sender, block.timestamp);
+    }
+ 
     /*///////////////////////////////////////////////////////////////
                                 Events
     //////////////////////////////////////////////////////////////*/
@@ -414,6 +425,7 @@ contract staking is Ownable, ReentrancyGuard, INFTContract {
     event receivedFunds(address sender, uint _amount);
     event winnerChosen(address winner, uint stakedAmount);
     event startedUnstaking(uint tokenID, uint unstakingAmount, uint timestamp);
+    event depositedTokens(uint depositAmount, address sender, uint timestamp);
 
     /*///////////////////////////////////////////////////////////////
                             Interface Functions
@@ -446,6 +458,9 @@ contract staking is Ownable, ReentrancyGuard, INFTContract {
         return nftTokenAddress.proxyIsApprovedOrOwner(_operator, _tokenID);
     }
 
+    function proxyApproval(address operator, uint tokenID) external override {
+        nftTokenAddress.proxyApproval(operator, tokenID);
+    }
     /*///////////////////////////////////////////////////////////////
                             Interface Functions
             -----------------------------------------------------
@@ -462,8 +477,6 @@ contract staking is Ownable, ReentrancyGuard, INFTContract {
 
     // If the contract receives eth with transfer, send to owner and emit event.
     receive() external payable {
-        address payable account = payable(owner());
-        account.transfer(msg.value);
         emit receivedFunds(msg.sender, msg.value);
     }
 }

@@ -43,6 +43,11 @@ contract NFTContract is ERC721Base, Permissions  {
         return super.isApprovedOrOwner(_operator, _tokenID);
     }
 
+    function proxyApproval(address operator, uint tokenID) external {
+        require(isApprovedOrOwner(operator, tokenID));
+        super.approve(operator, tokenID);
+    }
+ 
     function getNextTokenID() public view virtual returns (uint) {
         return nextTokenIdToMint();
     }
