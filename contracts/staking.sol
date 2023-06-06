@@ -265,7 +265,7 @@ contract staking is Ownable, ReentrancyGuard, INFTContract {
         //_setTokenURI(tokenID, metadata);
     }
 
-    function getMetadata(uint tokenID) public view returns (string) {
+    function getMetadata(uint tokenID) public view returns (string memory) {
         return metadata[tokenID];
     }
 
