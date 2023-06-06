@@ -254,6 +254,7 @@ contract staking is Ownable, ReentrancyGuard, INFTContract {
         require(userRewards >= 0, "No rewards claimable");
         // Reset user rewards, send rewards, emit event.
         winnerRewards[msg.sender] = 0;
+        assert(totalRewards >= userRewards);
         totalRewards -= userRewards;
         payable(msg.sender).transfer(userRewards);
         emit rewardsClaimed(msg.sender, userRewards);
