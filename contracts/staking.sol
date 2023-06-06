@@ -72,6 +72,18 @@ contract staking is Ownable, ReentrancyGuard, INFTContract {
         _setupOwner(msg.sender);
     }
 
+
+    /*///////////////////////////////////////////////////////////////
+                                Events
+    //////////////////////////////////////////////////////////////*/
+
+    event receivedFunds(address sender, uint _amount);
+    event winnerChosen(address winner, uint winningAmount);
+    event startedUnstaking(uint tokenID, uint unstakingAmount, uint timestamp);
+    event depositedTokens(uint depositAmount, address sender, uint timestamp);
+    event rewardsClaimed(address winnerAddress, uint rewardAmount);
+
+
     /*///////////////////////////////////////////////////////////////
                         Main Functions
         -----------------------------------------------------
@@ -192,7 +204,7 @@ contract staking is Ownable, ReentrancyGuard, INFTContract {
     }
     // Write function to update contract on winner and amount.
     function publishWinningAddress(address winnerAddress, uint winningAmount) external {
-        require(msg.sender == _owner); 
+        require(msg.sender == owner()); 
         winnerRewards[winnerAddress] += winningAmount;
         totalRewards += winningAmount;
         emit winnerChosen(winnerAddress, winningAmount);
@@ -362,7 +374,7 @@ contract staking is Ownable, ReentrancyGuard, INFTContract {
 
     // Function to withdraw tokens in case tokens are locked in the contract.
     function WithdrawTokens(uint _amount) external virtual {
-        require(msg.sender == _owner, "Not owner");
+        require(msg.sender == owner(), "Not owner");
         require(address(this).balance >= _amount, "Not enough tokens in contract");
 
         payable(msg.sender).transfer(_amount);
@@ -372,15 +384,6 @@ contract staking is Ownable, ReentrancyGuard, INFTContract {
         emit depositedTokens(msg.value, msg.sender, block.timestamp);
     }
  
-    /*///////////////////////////////////////////////////////////////
-                                Events
-    //////////////////////////////////////////////////////////////*/
-
-    event receivedFunds(address sender, uint _amount);
-    event winnerChosen(address winner, uint winningAmount);
-    event startedUnstaking(uint tokenID, uint unstakingAmount, uint timestamp);
-    event depositedTokens(uint depositAmount, address sender, uint timestamp);
-    event rewardsClaimed(address winnerAddress, uint rewardAmount);
 
     /*///////////////////////////////////////////////////////////////
                             Interface Functions
