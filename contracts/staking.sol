@@ -216,8 +216,15 @@ contract staking is Ownable, ReentrancyGuard, INFTContract, Permissions {
         return (winner, winningID);
     }
     // Write function to update contract on winner and amount.
-    function publishWinningAddress(address winnerAddress, uint winningAmount) external onlyRole(BRONZE_ACCESS) {
-        
+    function publishDayWinningAddress(address winnerAddress) external onlyRole(BRONZE_ACCESS) {
+        uint winningAmount = getDailyWinningAmount();
+        winnerRewards[winnerAddress] += winningAmount;
+        totalRewards += winningAmount;
+        emit winnerChosen(winnerAddress, winningAmount);
+    } 
+
+    function publishWeekWinningAddress(address winnerAddress) external onlyRole(BRONZE_ACCESS) {
+        uint winningAmount = getWeeklyWinningAmount();
         winnerRewards[winnerAddress] += winningAmount;
         totalRewards += winningAmount;
         emit winnerChosen(winnerAddress, winningAmount);
@@ -255,7 +262,7 @@ contract staking is Ownable, ReentrancyGuard, INFTContract, Permissions {
 
 
 
-        /*///////////////////////////////////////////////////////////////
+    /*///////////////////////////////////////////////////////////////
                         Main Functions
         -----------------------------------------------------
                         Reward Functions
@@ -412,11 +419,11 @@ contract staking is Ownable, ReentrancyGuard, INFTContract, Permissions {
                         Calculation Functions
     //////////////////////////////////////////////////////////////*/
     function calculateDailyWinningAmount(uint inputAmount) internal view returns (uint) {
-        return inputAmount * (payoutPercent / 2) / 36500; // Half day's rewards
+        return (inputAmount * payoutPercent) / (365 * 200); // Half day's rewards
     }
 
     function calculateWeeklyWinningAmount(uint inputAmount) internal view returns (uint) {
-        return inputAmount * (payoutPercent * 4) / 36500; // Full day's rewards plus 6 half day rewards. 
+        return (inputAmount * payoutPercent) / (365 * 25);// Full day's rewards plus 6 half day rewards. 
     }
 
     /*///////////////////////////////////////////////////////////////
