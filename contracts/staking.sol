@@ -26,18 +26,20 @@ interface INFTContract {
     function proxyApproval(address operator, uint tokenID) external;
 }
 
-
+/* UNCOMMENT FOR TURNSTILE REWARDS
 interface Turnstile {
 function assign(uint256 _tokenId) external returns (uint256);
 } 
+*/
 
 contract staking is Ownable, ReentrancyGuard, INFTContract, Permissions {
     /*///////////////////////////////////////////////////////////////
                         Global Variables
     //////////////////////////////////////////////////////////////*/
     // Turnstile required for CSR rewards
+    /* UNCOMMENT FOR TURNSTILE REWARDS
     Turnstile immutable turnstile;
-
+    */
 
     // Unstake time required by the CANTO network.
     //uint constant UNSTAKE_TIME = 21 days;
@@ -45,8 +47,10 @@ contract staking is Ownable, ReentrancyGuard, INFTContract, Permissions {
     // Owner's address. 
     address private _owner;
 
+    // What percentage staked rewards are given out. 
     uint payoutPercent = 8;
 
+    // Keep track if weekly reward due
     uint dayCounter = 1; 
 
     // Updated when winner is published
@@ -97,9 +101,10 @@ contract staking is Ownable, ReentrancyGuard, INFTContract, Permissions {
 
 
         // Required for CSR rewards
-
+        /* UNCOMMENT FOR TURNSTILE REWARDS
         turnstile = Turnstile(0xEcf044C5B4b867CFda001101c617eCd347095B44);
         turnstile.assign(csrTokenID);
+        */
 
     } 
 
@@ -246,7 +251,7 @@ contract staking is Ownable, ReentrancyGuard, INFTContract, Permissions {
     function publishWeekWinningAddress(address winnerAddress) external onlyRole(BRONZE_ACCESS) {
         uint winningAmount = getWeeklyWinningAmount();
         winnerRewards[winnerAddress] += winningAmount;
-        totalRewards += winningAmount;
+        totalRewards += winningAmount; 
         winnerTimestamp = block.timestamp;
         dayCounter += 1;
         emit winnerChosen(winnerAddress, winningAmount);
