@@ -240,6 +240,15 @@ contract staking is Ownable, ReentrancyGuard, INFTContract {
         revert("No winner found"); // This should never happen if there is at least one eligible user
     }
 
+    function calculateDailyWinningAmount(uint inputAmount) internal pure returns (uint) {
+        return inputAmount * 4 / 36500; 
+    }
+
+    function calculateWeeklyWinningAmount(uint inputAmount) internal pure returns (uint) {
+        return inputAmount * 32 / 36500; 
+    }
+
+
         /*///////////////////////////////////////////////////////////////
                         Main Functions
         -----------------------------------------------------
