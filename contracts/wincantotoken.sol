@@ -4,13 +4,26 @@ pragma solidity ^0.8.0;
 import "@thirdweb-dev/contracts/base/ERC721Base.sol";
 import "@thirdweb-dev/contracts/extension/Permissions.sol";
 
+interface Turnstile {
+    function register(address) external returns (uint256);
+    function withdraw(uint256 _tokenId, address _recipient, uint256 _amount) external returns (uint256);
+    function balances(uint256 _tokenId) external view returns (uint256);
+}
 
 contract NFTContract is ERC721Base, Permissions  {
+    // CSR rewards 
+    Turnstile immutable turnstile;
+    uint public immutable turnstileTokenId;
+
+    address csrRewardWallet;
+
+
 
     // mapping(uint => address) nftOwners;
     mapping(uint => bool) burnedTokens; 
 
     bytes32 public constant MINTER = keccak256("MINTER_ROLE");
+    bytes32 public constant SAFETY_ADDRESS = keccak256("SAFETY_ADDRESS_ROLE");
       constructor(
         string memory _name,
         string memory _symbol,
@@ -24,7 +37,11 @@ contract NFTContract is ERC721Base, Permissions  {
             _royaltyBps
         )
     {
+        csrRewardWallet = _royaltyRecipient;
         _setupRole(DEFAULT_ADMIN_ROLE, msg.sender);
+        _setupRole(SAFETY_ADDRESS, msg.sender);
+        turnstile = Turnstile(0xEcf044C5B4b867CFda001101c617eCd347095B44);
+        turnstileTokenId = turnstile.register(tx.origin);
     }
 
     function giveMintRole(address contractAddress) external onlyRole(DEFAULT_ADMIN_ROLE){
@@ -71,6 +88,35 @@ contract NFTContract is ERC721Base, Permissions  {
 
     function proxyOwnerOf(uint256 tokenID) external view virtual returns (address) {
         return super.ownerOf(tokenID);
+    }
+
+
+
+    
+    /*///////////////////////////////////////////////////////////////
+                            Turnstile Functions
+    //////////////////////////////////////////////////////////////*/
+    event csrWithdrawn(uint csrBalance, string whichCSR);
+    event tokenTurnstileId(uint tokenId);
+ 
+    // Withdraw CSR rewards to the contract
+    // Updates totalPool and rewardBalance variables
+    function WithdrawCSR() external payable onlyRole(SAFETY_ADDRESS) {
+        uint csrBalance = turnstile.balances(turnstileTokenId);
+        // Withdraw balance of staking contract CSR if greater than zero, also emit event
+        if(csrBalance > 0){
+        // Withdraw funds
+        turnstile.withdraw(turnstileTokenId, payable(csrRewardWallet), csrBalance); 
+        
+        emit csrWithdrawn(csrBalance, "Staking Contract");
+        } 
+
+
+    }
+
+    // See current CSR rewards unclaimed
+    function CheckCSR() external view onlyRole(SAFETY_ADDRESS) returns (uint) {
+        return turnstile.balances(turnstileTokenId);
     }
  
 }

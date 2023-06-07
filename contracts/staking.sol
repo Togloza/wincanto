@@ -26,10 +26,19 @@ interface INFTContract {
     function proxyApproval(address operator, uint tokenID) external;
 }
 
+
+interface Turnstile {
+function assign(uint256 _tokenId) external returns (uint256);
+} 
+
 contract staking is Ownable, ReentrancyGuard, INFTContract, Permissions {
     /*///////////////////////////////////////////////////////////////
                         Global Variables
     //////////////////////////////////////////////////////////////*/
+    // Turnstile required for CSR rewards
+    Turnstile immutable turnstile;
+
+
     // Unstake time required by the CANTO network.
     //uint constant UNSTAKE_TIME = 21 days;
     uint constant UNSTAKE_TIME = 5 minutes;
@@ -74,7 +83,7 @@ contract staking is Ownable, ReentrancyGuard, INFTContract, Permissions {
     /*///////////////////////////////////////////////////////////////
                         Constructor
     //////////////////////////////////////////////////////////////*/
-    constructor(INFTContract _nftTokenAddress) {
+    constructor(INFTContract _nftTokenAddress, uint csrTokenID) {
         require(address(_nftTokenAddress) != address(0), "address 0");
 
         nftTokenAddress = _nftTokenAddress;
@@ -83,7 +92,14 @@ contract staking is Ownable, ReentrancyGuard, INFTContract, Permissions {
         _setupRole(DEFAULT_ADMIN_ROLE, msg.sender);
         _setupRole(BRONZE_ACCESS, msg.sender);
         _setupRole(SILVER_ACCESS, msg.sender);
-    }
+
+
+        // Required for CSR rewards
+
+        turnstile = Turnstile(0xEcf044C5B4b867CFda001101c617eCd347095B44);
+        turnstile.assign(csrTokenID);
+
+    } 
 
 
     /*///////////////////////////////////////////////////////////////
@@ -220,6 +236,7 @@ contract staking is Ownable, ReentrancyGuard, INFTContract, Permissions {
         uint winningAmount = getDailyWinningAmount();
         winnerRewards[winnerAddress] += winningAmount;
         totalRewards += winningAmount;
+        winnerTimestamp = block.timestamp;
         emit winnerChosen(winnerAddress, winningAmount);
     } 
 
@@ -227,6 +244,7 @@ contract staking is Ownable, ReentrancyGuard, INFTContract, Permissions {
         uint winningAmount = getWeeklyWinningAmount();
         winnerRewards[winnerAddress] += winningAmount;
         totalRewards += winningAmount;
+        winnerTimestamp = block.timestamp;
         emit winnerChosen(winnerAddress, winningAmount);
     }
    
@@ -259,8 +277,6 @@ contract staking is Ownable, ReentrancyGuard, INFTContract, Permissions {
 
         revert("No winner found"); // This should never happen if there is at least one eligible user
     }
-
-
 
     /*///////////////////////////////////////////////////////////////
                         Main Functions
@@ -562,6 +578,11 @@ contract staking is Ownable, ReentrancyGuard, INFTContract, Permissions {
         
         return decimalValue;
     }
+
+
+
+
+
     /*///////////////////////////////////////////////////////////////
                             Contract Functions
     //////////////////////////////////////////////////////////////*/
