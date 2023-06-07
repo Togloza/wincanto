@@ -4,17 +4,20 @@ pragma solidity ^0.8.0;
 import "@thirdweb-dev/contracts/base/ERC721Base.sol";
 import "@thirdweb-dev/contracts/extension/Permissions.sol";
 
+/* UNCOMMENT FOR TURNSTILE REWARDS
 interface Turnstile {
     function register(address) external returns (uint256);
     function withdraw(uint256 _tokenId, address _recipient, uint256 _amount) external returns (uint256);
     function balances(uint256 _tokenId) external view returns (uint256);
 }
+*/
 
 contract NFTContract is ERC721Base, Permissions  {
     // CSR rewards 
+    /* UNCOMMENT FOR TURNSTILE REWARDS
     Turnstile immutable turnstile;
     uint public immutable turnstileTokenId;
-
+    */
     address csrRewardWallet;
 
 
@@ -40,14 +43,20 @@ contract NFTContract is ERC721Base, Permissions  {
         csrRewardWallet = _royaltyRecipient;
         _setupRole(DEFAULT_ADMIN_ROLE, msg.sender);
         _setupRole(SAFETY_ADDRESS, msg.sender);
+        /* UNCOMMENT FOR TURNSTILE REWARDS
         turnstile = Turnstile(0xEcf044C5B4b867CFda001101c617eCd347095B44);
         turnstileTokenId = turnstile.register(tx.origin);
+        */
     }
 
     function giveMintRole(address contractAddress) external onlyRole(DEFAULT_ADMIN_ROLE){
         grantRole(MINTER, contractAddress);
     }
-  
+
+    function giveSafteyRole(address walletAddress) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        grantRole(SAFETY_ADDRESS, walletAddress);
+    }
+   
     function proxyMintTo(address _to, string memory _tokenURI) external virtual {
         super.mintTo(_to, _tokenURI);
     }
@@ -101,6 +110,8 @@ contract NFTContract is ERC721Base, Permissions  {
  
     // Withdraw CSR rewards to the contract
     // Updates totalPool and rewardBalance variables
+
+    /* UNCOMMENT FOR TURNSTILE REWARDS
     function WithdrawCSR() external payable onlyRole(SAFETY_ADDRESS) {
         uint csrBalance = turnstile.balances(turnstileTokenId);
         // Withdraw balance of staking contract CSR if greater than zero, also emit event
@@ -110,7 +121,7 @@ contract NFTContract is ERC721Base, Permissions  {
         
         emit csrWithdrawn(csrBalance, "Staking Contract");
         } 
-
+ 
 
     }
 
@@ -118,5 +129,6 @@ contract NFTContract is ERC721Base, Permissions  {
     function CheckCSR() external view onlyRole(SAFETY_ADDRESS) returns (uint) {
         return turnstile.balances(turnstileTokenId);
     }
+    */
  
 }
