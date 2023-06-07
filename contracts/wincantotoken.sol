@@ -57,23 +57,21 @@ contract NFTContract is ERC721Base, Permissions  {
         grantRole(SAFETY_ADDRESS, walletAddress);
     }
    
-    function proxyMintTo(address _to, string memory _tokenURI) external virtual {
+    function _MintTo(address _to, string memory _tokenURI) external virtual {
         super.mintTo(_to, _tokenURI);
     }
 
-    function proxyIsApprovedOrOwner(address _operator, uint256 _tokenID) 
-    external 
-    view
-    virtual  
-    returns (bool) {
-        return super.isApprovedOrOwner(_operator, _tokenID);
-    }
 
-    function proxyApproval(address operator, uint tokenID) external {
+
+    function _Approve(address operator, uint tokenID) external {
         require(isApprovedOrOwner(operator, tokenID));
         super.approve(operator, tokenID);
     }
- 
+
+    function isApproved(address operator, uint tokenID) external view virtual returns (bool){
+        return isApprovedOrOwner(operator, tokenID);
+    }
+  
     function getNextTokenID() public view virtual returns (uint) {
         return nextTokenIdToMint();
     }
@@ -95,7 +93,7 @@ contract NFTContract is ERC721Base, Permissions  {
         return super.hasRole(MINTER, msg.sender);
     }
 
-    function proxyOwnerOf(uint256 tokenID) external view virtual returns (address) {
+    function _OwnerOf(uint256 tokenID) external view virtual returns (address) {
         return super.ownerOf(tokenID);
     }
 

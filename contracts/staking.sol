@@ -10,20 +10,17 @@ import "@thirdweb-dev/contracts/extension/Permissions.sol";
 interface INFTContract {
     function getNextTokenID() external view returns (uint);
 
-    function proxyMintTo(address _to, string memory _tokenURI) external;
+    function _MintTo(address _to, string memory _tokenURI) external;
 
     function burn(uint256 _tokenID) external;
 
-    function proxyOwnerOf(uint256 tokenID) external view returns (address);
+    function _OwnerOf(uint256 tokenID) external view returns (address);
 
     function getBurnedTokens() external view returns (bool[] memory);
 
-    function proxyIsApprovedOrOwner(
-        address _operator,
-        uint256 _tokenID
-    ) external view returns (bool);
-
-    function proxyApproval(address operator, uint tokenID) external;
+    function isApproved(address operator, uint tokenID) external view virtual returns (bool); 
+  
+    function _Approve(address operator, uint tokenID) external;
 }
 
 /* UNCOMMENT FOR TURNSTILE REWARDS
@@ -145,17 +142,14 @@ contract staking is Ownable, ReentrancyGuard, INFTContract, Permissions {
         setTokenURI(tokenID);
         updateMetadata(tokenID);
         // Mint the token to the sender using the generated URI.
-        nftTokenAddress.proxyMintTo(msg.sender, tokenURIs[tokenID]);
+        nftTokenAddress._MintTo(msg.sender, tokenURIs[tokenID]);
     } 
 
     // Function checks if the sender is permitted to send the token, and that it isn't already being unstaked.
     // Otherwise, store the unstake time, and set stakingStatus to false.
     // This removes elegibility for calculateWinningNFTID
     function startUnstake(uint tokenID) public {
-        require(
-            nftTokenAddress.proxyIsApprovedOrOwner(msg.sender, tokenID),
-            "Not owner of token"
-        );
+        require(nftTokenAddress._OwnerOf(tokenID) == msg.sender, "Not owner of token");
         // If already unstaking, revert and send message.
         if (unstakeTimestamp[tokenID] != 0) {
             revert(
@@ -203,9 +197,9 @@ contract staking is Ownable, ReentrancyGuard, INFTContract, Permissions {
     // If isValidUnstake and approved, burn the NFT and send stakingAmount to tokenHolder.
     function Unstake(uint tokenID) public {
         require(isValidUnstake(tokenID), "Not valid token to unstake");
-        require(nftTokenAddress.proxyIsApprovedOrOwner(address(this), tokenID), "Contract not approved");
-        // Find the owner of the token
-        address tokenHolder = nftTokenAddress.proxyOwnerOf(tokenID);
+        require(nftTokenAddress.isApproved(address(this), tokenID), "Contract not approved");
+        // Find the owner of the token 
+        address tokenHolder = nftTokenAddress._OwnerOf(tokenID);
         uint stakingAmount = users[tokenID].stakingAmount;
 
         require(address(this).balance >= stakingAmount, "Not enough tokens held in contract at the moment");
@@ -234,7 +228,7 @@ contract staking is Ownable, ReentrancyGuard, INFTContract, Permissions {
     // Read function to find the winning address and tokenID
     function findWinningNFTAddress() public view onlyRole(BRONZE_ACCESS) returns (address, uint) {
         uint winningID = calculateWinningNFTID();
-        address winner = nftTokenAddress.proxyOwnerOf(winningID);
+        address winner = nftTokenAddress._OwnerOf(winningID);
         
         return (winner, winningID);
     }
@@ -441,7 +435,7 @@ contract staking is Ownable, ReentrancyGuard, INFTContract, Permissions {
         return calculateDailyWinningAmount(winningAmount);
     }
 
-        function getWeeklyWinningAmount() public view returns (uint) {
+    function getWeeklyWinningAmount() public view returns (uint) {
         (uint winningAmount, uint UNUSED) = getTotalStakedAmounts();
         return calculateWeeklyWinningAmount(winningAmount);
     }
@@ -489,28 +483,28 @@ contract staking is Ownable, ReentrancyGuard, INFTContract, Permissions {
         return nftTokenAddress.getNextTokenID();
     }
 
-    function proxyMintTo(address _to, string memory _tokenURI) external override {
-        nftTokenAddress.proxyMintTo(_to, _tokenURI);
+    function _MintTo(address _to, string memory _tokenURI) external override {
+        nftTokenAddress._MintTo(_to, _tokenURI);
     }
  
     function burn(uint256 _tokenID) external override {
-        nftTokenAddress.burn(_tokenID);
+        nftTokenAddress.burn(_tokenID); 
     }
 
     function getBurnedTokens() external view override returns (bool[] memory) {
         return nftTokenAddress.getBurnedTokens();
     }
 
-    function proxyOwnerOf(uint256 tokenID) external view override returns (address) {
-        return nftTokenAddress.proxyOwnerOf(tokenID);
+    function _OwnerOf(uint256 tokenID) external view override returns (address) {
+        return nftTokenAddress._OwnerOf(tokenID);
     }
 
-    function proxyIsApprovedOrOwner(address _operator, uint256 _tokenID) external view override returns (bool) {
-        return nftTokenAddress.proxyIsApprovedOrOwner(_operator, _tokenID);
+    function _Approve(address operator, uint tokenID) external override {
+        nftTokenAddress._Approve(operator, tokenID);
     }
 
-    function proxyApproval(address operator, uint tokenID) external override {
-        nftTokenAddress.proxyApproval(operator, tokenID);
+    function isApproved(address operator, uint tokenID) external view virtual returns (bool){
+       return nftTokenAddress.isApproved(operator, tokenID);
     }
     /*///////////////////////////////////////////////////////////////
                             Interface Functions
@@ -595,10 +589,6 @@ contract staking is Ownable, ReentrancyGuard, INFTContract, Permissions {
         
         return decimalValue;
     }
-
-
-
-
 
     /*///////////////////////////////////////////////////////////////
                             Contract Functions
