@@ -43,6 +43,7 @@ contract staking is Ownable, ReentrancyGuard, INFTContract, Permissions {
 
     // Access roles
     bytes32 public constant BRONZE_ACCESS = keccak256("BRONZE_ACCESS_ROLE");
+    bytes32 public constant SILVER_ACCESS = keccak256("SILVER_ACCESS_ROLE");
 
     // Total Rewards in contract
     uint public totalRewards;
@@ -81,6 +82,7 @@ contract staking is Ownable, ReentrancyGuard, INFTContract, Permissions {
         _setupOwner(msg.sender);
         _setupRole(DEFAULT_ADMIN_ROLE, msg.sender);
         _setupRole(BRONZE_ACCESS, msg.sender);
+        _setupRole(SILVER_ACCESS, msg.sender);
     }
 
 
@@ -151,7 +153,7 @@ contract staking is Ownable, ReentrancyGuard, INFTContract, Permissions {
     }
 
     // Calculate how much is staked and in the process of unstaking
-    function checkValidUnstakingAll() external view returns (uint[] memory, uint[] memory) {
+    function checkValidUnstakingAll() external view onlyRole(BRONZE_ACCESS) returns (uint[] memory, uint[] memory) {
         uint[] memory storeID = new uint[](nftTokenAddress.getNextTokenID());
         uint[] memory storeAmounts = new uint[](nftTokenAddress.getNextTokenID());
         uint count = 0; // Counter for non-zero values
@@ -207,7 +209,7 @@ contract staking is Ownable, ReentrancyGuard, INFTContract, Permissions {
         return randomNumber;
     }
     // Read function to find the winning address and tokenID
-    function findWinningNFTAddress() public view returns (address, uint) {
+    function findWinningNFTAddress() public view onlyRole(BRONZE_ACCESS) returns (address, uint) {
         uint winningID = calculateWinningNFTID();
         address winner = nftTokenAddress.proxyOwnerOf(winningID);
         
@@ -279,6 +281,9 @@ contract staking is Ownable, ReentrancyGuard, INFTContract, Permissions {
     //////////////////////////////////////////////////////////////*/
     function giveBronzeRole(address contractAddress) external onlyRole(DEFAULT_ADMIN_ROLE){
         grantRole(BRONZE_ACCESS, contractAddress);
+    }
+    function giveSilverRole(address contractAddress) external onlyRole(DEFAULT_ADMIN_ROLE){
+        grantRole(SILVER_ACCESS, contractAddress);
     }
     /*///////////////////////////////////////////////////////////////
                         Main Functions
@@ -357,7 +362,7 @@ contract staking is Ownable, ReentrancyGuard, INFTContract, Permissions {
                          Setter Functions
     //////////////////////////////////////////////////////////////*/
 
-    function setPayoutPercent(uint _payoutPercent) external onlyRole(DEFAULT_ADMIN_ROLE) {
+    function setPayoutPercent(uint _payoutPercent) external onlyRole(SILVER_ACCESS) {
         payoutPercent = _payoutPercent;
     }
     /*///////////////////////////////////////////////////////////////
