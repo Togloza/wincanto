@@ -36,6 +36,8 @@ contract staking is Ownable, ReentrancyGuard, INFTContract, Permissions {
     // Owner's address. 
     address private _owner;
 
+    uint payoutPercent = 8;
+
     // Updated when winner is published
     uint public winnerTimestamp;
 
@@ -213,11 +215,12 @@ contract staking is Ownable, ReentrancyGuard, INFTContract, Permissions {
     }
     // Write function to update contract on winner and amount.
     function publishWinningAddress(address winnerAddress, uint winningAmount) external onlyRole(BRONZE_ACCESS) {
+        
         winnerRewards[winnerAddress] += winningAmount;
         totalRewards += winningAmount;
         emit winnerChosen(winnerAddress, winningAmount);
     }
-  
+   
     // Function to calculate the ID of the winning NFTID.
     // Chances of winning are proportional to the amount staked by the users.
     // Only NFTs with stakingStatus true are counted.
@@ -248,13 +251,6 @@ contract staking is Ownable, ReentrancyGuard, INFTContract, Permissions {
         revert("No winner found"); // This should never happen if there is at least one eligible user
     }
 
-    function calculateDailyWinningAmount(uint inputAmount) internal pure returns (uint) {
-        return inputAmount * 4 / 36500; 
-    }
-
-    function calculateWeeklyWinningAmount(uint inputAmount) internal pure returns (uint) {
-        return inputAmount * 32 / 36500; 
-    }
 
 
         /*///////////////////////////////////////////////////////////////
@@ -368,7 +364,7 @@ contract staking is Ownable, ReentrancyGuard, INFTContract, Permissions {
     }
 
     // Function to see how much is staked by users, seperated by stakingStatus
-    function getTotalStakedAmounts() external view returns (uint, uint) {
+    function getTotalStakedAmounts() public view returns (uint, uint) {
         uint totalStakingAmount = 0;
         uint totalUnstaking = 0;
 
@@ -385,6 +381,29 @@ contract staking is Ownable, ReentrancyGuard, INFTContract, Permissions {
 
     function getContractBalance() external view returns (uint){
         return address(this).balance;
+    }
+
+    function getDailyWinningAmount() public view returns (uint) {
+        (uint winningAmount, uint UNUSED) = getTotalStakedAmounts();
+        return calculateDailyWinningAmount(winningAmount);
+    }
+
+        function getWeeklyWinningAmount() public view returns (uint) {
+        (uint winningAmount, uint UNUSED) = getTotalStakedAmounts();
+        return calculateWeeklyWinningAmount(winningAmount);
+    }
+
+    /*///////////////////////////////////////////////////////////////
+                         Helper Functions
+        -----------------------------------------------------
+                        Calculation Functions
+    //////////////////////////////////////////////////////////////*/
+    function calculateDailyWinningAmount(uint inputAmount) internal view returns (uint) {
+        return inputAmount * (payoutPercent / 2) / 36500; // Half day's rewards
+    }
+
+    function calculateWeeklyWinningAmount(uint inputAmount) internal view returns (uint) {
+        return inputAmount * (payoutPercent * 4) / 36500; // Full day's rewards plus 6 half day rewards. 
     }
 
 
