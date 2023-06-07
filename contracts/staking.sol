@@ -47,7 +47,7 @@ contract staking is Ownable, ReentrancyGuard, INFTContract, Permissions {
 
     uint payoutPercent = 8;
 
-    uint dayCounter = 0; 
+    uint dayCounter = 1; 
 
     // Updated when winner is published
     uint public winnerTimestamp;
@@ -248,6 +248,7 @@ contract staking is Ownable, ReentrancyGuard, INFTContract, Permissions {
         winnerRewards[winnerAddress] += winningAmount;
         totalRewards += winningAmount;
         winnerTimestamp = block.timestamp;
+        dayCounter += 1;
         emit winnerChosen(winnerAddress, winningAmount);
     }
    
@@ -388,7 +389,7 @@ contract staking is Ownable, ReentrancyGuard, INFTContract, Permissions {
     } 
 
     function isWeekReward() public view returns (bool) {
-        return (dayCounter % 7) == 6; 
+        return (dayCounter % 7) == 0; 
     } 
     /*///////////////////////////////////////////////////////////////
                          Helper Functions
