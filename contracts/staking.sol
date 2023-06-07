@@ -2,10 +2,9 @@
 pragma solidity ^0.8.0;
 
 /// Import relevant contracts
-import "@thirdweb-dev/contracts/openzeppelin-presets/security/ReentrancyGuard.sol";
 import "@thirdweb-dev/contracts/extension/Ownable.sol";
 import "@thirdweb-dev/contracts/extension/Permissions.sol"; 
-
+ 
 // Interface for ERC721 contract.
 interface INFTContract {
     function getNextTokenID() external view returns (uint);
@@ -18,7 +17,7 @@ interface INFTContract {
 
     function getBurnedTokens() external view returns (bool[] memory);
 
-    function isApproved(address operator, uint tokenID) external view virtual returns (bool); 
+    function isApproved(address operator, uint tokenID) external view returns (bool); 
   
     function _Approve(address operator, uint tokenID) external;
 }
@@ -29,7 +28,7 @@ function assign(uint256 _tokenId) external returns (uint256);
 } 
 */
 
-contract staking is Ownable, ReentrancyGuard, INFTContract, Permissions {
+contract staking is Ownable, INFTContract, Permissions {
     /*///////////////////////////////////////////////////////////////
                         Global Variables
     //////////////////////////////////////////////////////////////*/

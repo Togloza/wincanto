@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: MIT
+// SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.0;
 
 import "@thirdweb-dev/contracts/base/ERC721Base.sol";
@@ -12,15 +12,13 @@ interface Turnstile {
 }
 */
 
-contract NFTContract is ERC721Base, Permissions  {
+contract WinToken is ERC721Base, Permissions  {
     // CSR rewards 
     /* UNCOMMENT FOR TURNSTILE REWARDS
     Turnstile immutable turnstile;
     uint public immutable turnstileTokenId;
     */
     address csrRewardWallet;
-
-
 
     // mapping(uint => address) nftOwners;
     mapping(uint => bool) burnedTokens; 
