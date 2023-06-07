@@ -4,6 +4,7 @@ pragma solidity ^0.8.0;
 /// Import relevant contracts
 import "@thirdweb-dev/contracts/openzeppelin-presets/security/ReentrancyGuard.sol";
 import "@thirdweb-dev/contracts/extension/Ownable.sol";
+import "@thirdweb-dev/contracts/extension/Permissions.sol"; 
 
 // Interface for ERC721 contract.
 interface INFTContract {
@@ -25,7 +26,7 @@ interface INFTContract {
     function proxyApproval(address operator, uint tokenID) external;
 }
 
-contract staking is Ownable, ReentrancyGuard, INFTContract {
+contract staking is Ownable, ReentrancyGuard, INFTContract, Permissions {
     /*///////////////////////////////////////////////////////////////
                         Global Variables
     //////////////////////////////////////////////////////////////*/
@@ -34,6 +35,12 @@ contract staking is Ownable, ReentrancyGuard, INFTContract {
     uint constant UNSTAKE_TIME = 5 minutes;
     // Owner's address. 
     address private _owner;
+
+    // Updated when winner is published
+    uint public winnerTimestamp;
+
+    // Access roles
+    bytes32 public constant BRONZE_ACCESS = keccak256("BRONZE_ACCESS_ROLE");
 
     // Total Rewards in contract
     uint public totalRewards;
@@ -70,6 +77,8 @@ contract staking is Ownable, ReentrancyGuard, INFTContract {
         nftTokenAddress = _nftTokenAddress;
 
         _setupOwner(msg.sender);
+        _setupRole(DEFAULT_ADMIN_ROLE, msg.sender);
+        _setupRole(BRONZE_ACCESS, msg.sender);
     }
 
 
@@ -203,13 +212,12 @@ contract staking is Ownable, ReentrancyGuard, INFTContract {
         return (winner, winningID);
     }
     // Write function to update contract on winner and amount.
-    function publishWinningAddress(address winnerAddress, uint winningAmount) external {
-        require(msg.sender == owner()); 
+    function publishWinningAddress(address winnerAddress, uint winningAmount) external onlyRole(BRONZE_ACCESS) {
         winnerRewards[winnerAddress] += winningAmount;
         totalRewards += winningAmount;
         emit winnerChosen(winnerAddress, winningAmount);
     }
- 
+  
     // Function to calculate the ID of the winning NFTID.
     // Chances of winning are proportional to the amount staked by the users.
     // Only NFTs with stakingStatus true are counted.
@@ -268,7 +276,14 @@ contract staking is Ownable, ReentrancyGuard, INFTContract {
         payable(msg.sender).transfer(userRewards);
         emit rewardsClaimed(msg.sender, userRewards);
     }
-
+    /*///////////////////////////////////////////////////////////////
+                        Main Functions
+        -----------------------------------------------------
+                        Access Functions
+    //////////////////////////////////////////////////////////////*/
+    function giveBronzeRole(address contractAddress) external onlyRole(DEFAULT_ADMIN_ROLE){
+        grantRole(BRONZE_ACCESS, contractAddress);
+    }
     /*///////////////////////////////////////////////////////////////
                         Main Functions
         -----------------------------------------------------
@@ -372,9 +387,7 @@ contract staking is Ownable, ReentrancyGuard, INFTContract {
         return address(this).balance;
     }
 
-    function getTotalRewards() external view returns (uint){
-        return totalRewards;
-    }
+
 
     /*///////////////////////////////////////////////////////////////
                          Helper Functions
@@ -383,7 +396,7 @@ contract staking is Ownable, ReentrancyGuard, INFTContract {
     //////////////////////////////////////////////////////////////*/
 
     // Function to withdraw tokens in case tokens are locked in the contract.
-    function WithdrawTokens(uint _amount) external virtual {
+    function WithdrawTokens(uint _amount) external {
         require(msg.sender == owner(), "Not owner");
         require(address(this).balance >= _amount, "Not enough tokens in contract");
 
