@@ -351,7 +351,15 @@ contract staking is Ownable, ReentrancyGuard, INFTContract, Permissions {
             return false;
         }
     }
+    /*///////////////////////////////////////////////////////////////
+                         Helper Functions
+        -----------------------------------------------------
+                         Setter Functions
+    //////////////////////////////////////////////////////////////*/
 
+    function setPayoutPercent(uint _payoutPercent) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        payoutPercent = _payoutPercent;
+    }
     /*///////////////////////////////////////////////////////////////
                          Helper Functions
         -----------------------------------------------------
@@ -405,8 +413,6 @@ contract staking is Ownable, ReentrancyGuard, INFTContract, Permissions {
     function calculateWeeklyWinningAmount(uint inputAmount) internal view returns (uint) {
         return inputAmount * (payoutPercent * 4) / 36500; // Full day's rewards plus 6 half day rewards. 
     }
-
-
 
     /*///////////////////////////////////////////////////////////////
                          Helper Functions
