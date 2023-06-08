@@ -99,7 +99,7 @@ contract WinStaking is IWinToken, WinnerCalculator, ConversionHelper, Metadata {
     // Function checks if the sender is permitted to send the token, and that it isn't already being unstaked.
     // Otherwise, store the unstake time, and set stakingStatus to false.
     // This removes elegibility for calculateWinningNFTID
-    function startUnstake(uint tokenID) public {
+    function startUnstake(uint tokenID, address sender) public {
         require(nftTokenAddress._OwnerOf(tokenID) == msg.sender, "Not owner of token");
         // If already unstaking, revert and send message.
         if (unstakeTimestamp[tokenID] != 0) {
@@ -121,7 +121,7 @@ contract WinStaking is IWinToken, WinnerCalculator, ConversionHelper, Metadata {
     }
 
     // Calculate how much is staked and in the process of unstaking
-    function checkValidUnstakingAll() external view onlyRole(BRONZE_ACCESS) returns (uint[] memory, uint[] memory) {
+    function checkValidUnstakingAll() external view onlyRole(SILVER_ACCESS) returns (uint[] memory, uint[] memory) {
         uint[] memory storeID = new uint[](nftTokenAddress.getNextTokenID());
         uint[] memory storeAmounts = new uint[](nftTokenAddress.getNextTokenID());
         uint count = 0; // Counter for non-zero values

@@ -64,8 +64,15 @@ contract WinnerCalculator is Ownable, IWinToken, Permissions {
         return (winner, winningID);
     }
     // Write function to update contract on winner and amount.
-    function publishDayWinningAddress(address winnerAddress) external {
-        uint winningAmount = getDailyWinningAmount(); 
+    function publishWinningAddress(address winnerAddress) external {
+        uint winningAmount; 
+        if (dayCounter % 7 == 0){
+            winningAmount = getWeeklyWinningAmount();
+        }
+        else {
+            winningAmount = getDailyWinningAmount(); 
+        } 
+        
         winnerRewards[winnerAddress] += winningAmount;
         totalRewards += winningAmount;
         winnerTimestamp = block.timestamp;
@@ -73,14 +80,6 @@ contract WinnerCalculator is Ownable, IWinToken, Permissions {
         emit winnerChosen(winnerAddress, winningAmount);
     } 
  
-    function publishWeekWinningAddress(address winnerAddress) external {
-        uint winningAmount = getWeeklyWinningAmount();
-        winnerRewards[winnerAddress] += winningAmount;
-        totalRewards += winningAmount; 
-        winnerTimestamp = block.timestamp;
-        dayCounter += 1;
-        emit winnerChosen(winnerAddress, winningAmount);
-    }
    
     // Function to calculate the ID of the winning NFTID.
     // Chances of winning are proportional to the amount staked by the users.
