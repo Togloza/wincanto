@@ -2,7 +2,6 @@
 pragma solidity ^0.8.0;
 
 import "./WinToken.sol";
-import "./IWinToken.sol";
 import "./ConversionHelper.sol";
 import "./WinnerCalculator.sol";
 import "./Metadata.sol";
@@ -10,7 +9,6 @@ import "./WinStaking.sol";
 
 contract FactoryContract {
     address public winTokenAddress;
-    address public iwinTokenAddress;
     address public conversionHelperAddress;
     address public winnerCalculatorAddress;
     address public metadataAddress;
@@ -23,36 +21,30 @@ contract FactoryContract {
         uint128 _royaltyBps
     ) {
         // Deploy winToken contract
-        winTokenAddress = address(new WinToken(_name, _symbol, _royaltyRecipient, _royaltyBps));
+            WinToken winToken = new WinToken(_name, _symbol, _royaltyRecipient, _royaltyBps);
+            IWinToken winTokenInterface = IWinToken(address(winToken));
+            winTokenAddress = address(winTokenInterface);
         // Retrieve the turnstileTokenId from the deployed winToken contract
         // uint256 turnstileTokenId = winTokenAddress.turnstileTokenId();
-        // Deploy IwinToken contract
-        iwinTokenAddress = address(new IWinToken());
 
         // Deploy ConversionHelper contract
         conversionHelperAddress = address(new ConversionHelper());
 
         // Deploy WinnerCalculator contract
-        winnerCalculatorAddress = address(new WinnerCalculator(winTokenAddress));
+        winnerCalculatorAddress = address(new WinnerCalculator(winTokenInterface));
 
         // Deploy Metadata contract
         metadataAddress = address(new Metadata());
 
         // Deploy Staking contract
-        stakingAddress = address(new WinStaking(winTokenAddress));
+        stakingAddress = address(new WinStaking());
     }
 
 
-    function Approve(address operator, uint tokenID) external {
-        winTokenAddress._Approve(operator, tokenID);
-    }
 
-    function burn(uint256 _tokenID) external {
-        winTokenAddress.burn(tokenID);
-    }
 
      function OwnerOf(uint256 tokenID) external view returns (address) {
-        winTokenAddress._OwnerOf(tokenID);
+        winTokenAddress.OwnerOf(tokenID);
      }
 
 

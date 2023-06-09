@@ -3,7 +3,7 @@ pragma solidity ^0.8.0;
 
 import "@thirdweb-dev/contracts/base/ERC721Base.sol";
 import "@thirdweb-dev/contracts/extension/Permissions.sol";
-
+import "./IWinToken.sol";
 /* UNCOMMENT FOR TURNSTILE REWARDS
 interface Turnstile {
     function register(address) external returns (uint256);
@@ -12,7 +12,7 @@ interface Turnstile {
 }
 */
 
-contract WinToken is ERC721Base, Permissions  {
+contract WinToken is ERC721Base, Permissions, IWinToken  {
     // CSR rewards 
     /* UNCOMMENT FOR TURNSTILE REWARDS
     Turnstile immutable turnstile;
@@ -55,13 +55,13 @@ contract WinToken is ERC721Base, Permissions  {
         grantRole(SAFETY_ADDRESS, walletAddress);
     }
    
-    function _MintTo(address _to, string memory _tokenURI) external virtual {
+    function MintTo(address _to, string memory _tokenURI) external virtual {
         super.mintTo(_to, _tokenURI);
     }
 
 
 
-    function _Approve(address operator, uint tokenID) external {
+    function Approve(address operator, uint tokenID) external {
         require(isApprovedOrOwner(operator, tokenID));
         super.approve(operator, tokenID);
     }
@@ -74,7 +74,7 @@ contract WinToken is ERC721Base, Permissions  {
         return nextTokenIdToMint();
     }
      
-    function burn(uint256 _tokenID) external virtual override {
+    function Burn(uint256 _tokenID) external virtual {
         burnedTokens[_tokenID] = true;
         super._burn(_tokenID, true);
     }
@@ -91,7 +91,7 @@ contract WinToken is ERC721Base, Permissions  {
         return super.hasRole(MINTER, msg.sender);
     }
 
-    function _OwnerOf(uint256 tokenID) external view virtual returns (address) {
+    function OwnerOf(uint256 tokenID) external view virtual returns (address) {
         return super.ownerOf(tokenID);
     }
 

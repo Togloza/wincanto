@@ -2,7 +2,7 @@
 pragma solidity ^0.8.0;
 
 
-import "./IWinToken.sol";  
+// import "./IWinToken.sol";  
 import "./WinnerCalculator.sol";
 import "./ConversionHelper.sol";
 import "./Metadata.sol";
@@ -13,7 +13,7 @@ function assign(uint256 _tokenId) external returns (uint256);
 } 
 */
 
-contract WinStaking is IWinToken, WinnerCalculator, ConversionHelper, Metadata {
+contract WinStaking is WinnerCalculator, ConversionHelper, Metadata {
     /*///////////////////////////////////////////////////////////////
                         Global Variables
     //////////////////////////////////////////////////////////////*/
@@ -21,7 +21,7 @@ contract WinStaking is IWinToken, WinnerCalculator, ConversionHelper, Metadata {
     /* UNCOMMENT FOR TURNSTILE REWARDS
     Turnstile immutable turnstile;
     */
-
+ 
     // Unstake time required by the CANTO network.
     //uint constant UNSTAKE_TIME = 21 days;
     uint constant UNSTAKE_TIME = 5 minutes;
@@ -35,16 +35,14 @@ contract WinStaking is IWinToken, WinnerCalculator, ConversionHelper, Metadata {
     // Mapping tokenID to when users started to unstake
     mapping(uint => uint) public unstakeTimestamp;
 
-    
+
+
 
     /*///////////////////////////////////////////////////////////////
                         Constructor
     //////////////////////////////////////////////////////////////*/
-    constructor(IWinToken _nftTokenAddress) {
-        require(address(_nftTokenAddress) != address(0), "address 0");
+    constructor() {
 
-        nftTokenAddress = _nftTokenAddress; 
- 
         _setupOwner(msg.sender);
         _setupRole(DEFAULT_ADMIN_ROLE, msg.sender);
         _setupRole(SILVER_ACCESS, msg.sender);
@@ -93,14 +91,14 @@ contract WinStaking is IWinToken, WinnerCalculator, ConversionHelper, Metadata {
         setTokenURI(tokenID);
         updateMetadata(tokenID);
         // Mint the token to the sender using the generated URI.
-        nftTokenAddress._MintTo(msg.sender, tokenURIs[tokenID]);
+        nftTokenAddress.MintTo(msg.sender, tokenURIs[tokenID]);
     } 
 
     // Function checks if the sender is permitted to send the token, and that it isn't already being unstaked.
     // Otherwise, store the unstake time, and set stakingStatus to false.
     // This removes elegibility for calculateWinningNFTID
     function startUnstake(uint tokenID, address sender) public {
-        require(nftTokenAddress._OwnerOf(tokenID) == msg.sender, "Not owner of token");
+        require(nftTokenAddress.OwnerOf(tokenID) == msg.sender, "Not owner of token");
         // If already unstaking, revert and send message.
         if (unstakeTimestamp[tokenID] != 0) {
             revert(
@@ -150,13 +148,13 @@ contract WinStaking is IWinToken, WinnerCalculator, ConversionHelper, Metadata {
         require(isValidUnstake(tokenID), "Not valid token to unstake");
         require(nftTokenAddress.isApproved(address(this), tokenID), "Contract not approved");
         // Find the owner of the token 
-        address tokenHolder = nftTokenAddress._OwnerOf(tokenID);
+        address tokenHolder = nftTokenAddress.OwnerOf(tokenID);
         uint stakingAmount = users[tokenID].stakingAmount;
 
         require(address(this).balance >= stakingAmount, "Not enough tokens held in contract at the moment");
         // nftTokenAddress.proxyApproval(address(this), tokenID); Approval required in front end
         // Burn token and transfer funds.
-        nftTokenAddress.burn(tokenID); 
+        nftTokenAddress.Burn(tokenID); 
          
         payable(tokenHolder).transfer(stakingAmount);
     }
@@ -238,7 +236,7 @@ contract WinStaking is IWinToken, WinnerCalculator, ConversionHelper, Metadata {
     function DepositTokens() external payable {
         emit depositedTokens(msg.value, msg.sender, block.timestamp);
     }
- 
+  
 
     /*///////////////////////////////////////////////////////////////
                             Interface Functions
@@ -247,42 +245,38 @@ contract WinStaking is IWinToken, WinnerCalculator, ConversionHelper, Metadata {
     //////////////////////////////////////////////////////////////*/
 
     // INFTContract required function
-    function getNextTokenID() external view override returns (uint) {
+/*     function getNextTokenID() external view override returns (uint) {
         return nftTokenAddress.getNextTokenID();
     }
 
-    function _MintTo(address _to, string memory _tokenURI) external override {
-        nftTokenAddress._MintTo(_to, _tokenURI);
+    function MintTo(address _to, string memory _tokenURI) external  {
+        nftTokenAddress.MintTo(_to, _tokenURI);
     }
  
-    function burn(uint256 _tokenID) external override {
-        nftTokenAddress.burn(_tokenID); 
+    function Burn(uint256 _tokenID) external {
+        nftTokenAddress.Burn(_tokenID); 
     }
 
-    function getBurnedTokens() external view override returns (bool[] memory) {
+    function getBurnedTokens() external view returns (bool[] memory) {
         return nftTokenAddress.getBurnedTokens();
     }
 
-    function _OwnerOf(uint256 tokenID) external view override returns (address) {
-        return nftTokenAddress._OwnerOf(tokenID);
+    function OwnerOf(uint256 tokenID) external view returns (address) {
+        return nftTokenAddress.OwnerOf(tokenID);
     }
 
-    function _Approve(address operator, uint tokenID) external override {
-        nftTokenAddress._Approve(operator, tokenID);
-    }
-
-    function isApproved(address operator, uint tokenID) external view virtual returns (bool){
+    function isApproved(address operator, uint tokenID) external view returns (bool){
        return nftTokenAddress.isApproved(operator, tokenID);
-    }
+    } */
     /*///////////////////////////////////////////////////////////////
                             Interface Functions
             -----------------------------------------------------
                         Ownable Required Functions
     //////////////////////////////////////////////////////////////*/
-    /// @dev Returns whether owner can be set in the given execution context.
-    function _canSetOwner() internal view virtual override returns (bool) {
-        return msg.sender == owner();
-    }
+    // /// @dev Returns whether owner can be set in the given execution context.
+    // function _canSetOwner() internal view override returns (bool) {
+    //     return msg.sender == owner();
+    // }
 
     /*///////////////////////////////////////////////////////////////
                             Contract Functions

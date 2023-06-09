@@ -59,7 +59,7 @@ contract WinnerCalculator is Ownable, IWinToken, Permissions {
     // Read function to find the winning address and tokenID
     function findWinningNFTAddress() public view returns (address, uint) {
         uint winningID = calculateWinningNFTID();
-        address winner = nftTokenAddress._OwnerOf(winningID);
+        address winner = nftTokenAddress.OwnerOf(winningID);
         
         return (winner, winningID);
     }
@@ -176,31 +176,27 @@ contract WinnerCalculator is Ownable, IWinToken, Permissions {
     //////////////////////////////////////////////////////////////*/
 
     // INFTContract required function 
-    function getNextTokenID() external view override returns (uint) {
+    function getNextTokenID() external view returns (uint) {
         return nftTokenAddress.getNextTokenID();
     }
 
-    function _MintTo(address _to, string memory _tokenURI) external override {
-        nftTokenAddress._MintTo(_to, _tokenURI);
+    function MintTo(address _to, string memory _tokenURI) external {
+        nftTokenAddress.MintTo(_to, _tokenURI);
     }
  
-    function burn(uint256 _tokenID) external override {
-        nftTokenAddress.burn(_tokenID); 
+    function Burn(uint256 _tokenID) external {
+        nftTokenAddress.Burn(_tokenID);  
     }
 
-    function getBurnedTokens() external view override returns (bool[] memory) {
+    function getBurnedTokens() external view returns (bool[] memory) {
         return nftTokenAddress.getBurnedTokens();
     }
 
-    function _OwnerOf(uint256 tokenID) external view override returns (address) {
-        return nftTokenAddress._OwnerOf(tokenID);
+    function OwnerOf(uint256 tokenID) external view returns (address) {
+        return nftTokenAddress.OwnerOf(tokenID);
     }
 
-    function _Approve(address operator, uint tokenID) external override {
-        nftTokenAddress._Approve(operator, tokenID);
-    }
-
-    function isApproved(address operator, uint tokenID) external view virtual returns (bool){
+    function isApproved(address operator, uint tokenID) external view returns (bool){
        return nftTokenAddress.isApproved(operator, tokenID);
     }
     /*///////////////////////////////////////////////////////////////
@@ -209,7 +205,7 @@ contract WinnerCalculator is Ownable, IWinToken, Permissions {
                         Ownable Required Functions
     //////////////////////////////////////////////////////////////*/
     /// @dev Returns whether owner can be set in the given execution context.
-    function _canSetOwner() internal view virtual override returns (bool) {
+    function _canSetOwner() internal view override returns (bool) {
         return msg.sender == owner();
     }
 }
